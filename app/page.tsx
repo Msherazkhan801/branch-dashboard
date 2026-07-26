@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   IncomeEntry,
   ClassExpenseEntry,
@@ -10,6 +10,7 @@ import {
   BranchStatsMap,
 } from "@/types";
 import { BRANCHES, DEFAULT_CATEGORIES } from "@/lib/constants";
+import { exportToXLSX } from "@/lib/exportUtils";
 import {
   fetchIncomeEntries,
   addIncomeEntry,
@@ -44,6 +45,10 @@ export default function Dashboard() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
+
+  // Date range filter state
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Loading state
   const [loading, setLoading] = useState(true);
@@ -134,22 +139,50 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Compute Branch Aggregations
+  // Filtered entries based on date range
+  const filteredIncome = useMemo(() => {
+    if (!startDate && !endDate) return incomeEntries;
+    return incomeEntries.filter((e) => {
+      if (startDate && e.date < startDate) return false;
+      if (endDate && e.date > endDate) return false;
+      return true;
+    });
+  }, [incomeEntries, startDate, endDate]);
+
+  const filteredClass = useMemo(() => {
+    if (!startDate && !endDate) return classEntries;
+    return classEntries.filter((e) => {
+      if (startDate && e.date < startDate) return false;
+      if (endDate && e.date > endDate) return false;
+      return true;
+    });
+  }, [classEntries, startDate, endDate]);
+
+  const filteredExtra = useMemo(() => {
+    if (!startDate && !endDate) return extraEntries;
+    return extraEntries.filter((e) => {
+      if (startDate && e.date < startDate) return false;
+      if (endDate && e.date > endDate) return false;
+      return true;
+    });
+  }, [extraEntries, startDate, endDate]);
+
+  // Compute Branch Aggregations from FILTERED data
   const stats: BranchStatsMap = BRANCHES.reduce(
     (acc, b) => {
-      const inc = incomeEntries
+      const inc = filteredIncome
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.amount, 0);
-      const clsExp = classEntries
+      const clsExp = filteredClass
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.expense, 0);
-      const extExp = extraEntries
+      const extExp = filteredExtra
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.amount, 0);
-      const procs = classEntries
+      const procs = filteredClass
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.procedures, 0);
-      const custs = classEntries
+      const custs = filteredClass
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.customers, 0);
 
@@ -163,6 +196,12 @@ export default function Dashboard() {
     },
     {} as BranchStatsMap
   );
+
+  // Helper to clear date filters
+  const clearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+  };
 
   if (loading) {
     return (
@@ -203,6 +242,32 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5">
+            <span className="text-xs text-slate-500 font-medium">From:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="text-xs border border-slate-300 rounded px-1.5 py-1 w-32 focus:outline-none focus:ring-1 focus:ring-[#16324F]"
+            />
+            <span className="text-xs text-slate-500 font-medium">To:</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="text-xs border border-slate-300 rounded px-1.5 py-1 w-32 focus:outline-none focus:ring-1 focus:ring-[#16324F]"
+            />
+            {(startDate || endDate) && (
+              <button
+                onClick={clearDateFilter}
+                className="text-xs text-red-500 hover:text-red-700 font-medium ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           {/* Add Data Buttons */}
           <button
             onClick={() => setShowIncomeModal(true)}
@@ -236,25 +301,90 @@ export default function Dashboard() {
 
       {/* Data Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <ClasswiseTable
-          entries={classEntries}
-          onDelete={handleDeleteClassEntry}
-        />
-        <ExtraExpenseTable
-          entries={extraEntries}
-          onDelete={handleDeleteExtraEntry}
-        />
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-gray-800">Class-wise Expenses</h2>
+            {filteredClass.length > 0 && (
+              <button
+                onClick={() =>
+                  exportToXLSX(
+                    filteredClass.map((e) => ({
+                      Branch: e.branch,
+                      Date: e.date,
+                      Class: e.procClass,
+                      Procedures: e.procedures,
+                      Customers: e.customers,
+                      Expense: e.expense,
+                    })),
+                    "class-expenses"
+                  )
+                }
+                className="px-2.5 py-1 text-xs font-medium bg-[#16324F] text-white rounded hover:bg-[#0f2439] transition-colors"
+              >
+                Download XLSX
+              </button>
+            )}
+          </div>
+          <ClasswiseTable
+            entries={filteredClass}
+            onDelete={handleDeleteClassEntry}
+          />
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-gray-800">Extra Expenses</h2>
+            {filteredExtra.length > 0 && (
+              <button
+                onClick={() =>
+                  exportToXLSX(
+                    filteredExtra.map((e) => ({
+                      Branch: e.branch,
+                      Date: e.date,
+                      Category: e.category,
+                      Amount: e.amount,
+                    })),
+                    "extra-expenses"
+                  )
+                }
+                className="px-2.5 py-1 text-xs font-medium bg-[#16324F] text-white rounded hover:bg-[#0f2439] transition-colors"
+              >
+                Download XLSX
+              </button>
+            )}
+          </div>
+          <ExtraExpenseTable
+            entries={filteredExtra}
+            onDelete={handleDeleteExtraEntry}
+          />
+        </div>
       </div>
 
       {/* Alerts */}
       <AlertsList stats={stats} />
 
       {/* Income Section */}
-      {incomeEntries.length > 0 && (
+      {filteredIncome.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
-          <h2 className="font-semibold text-gray-800 p-4 border-b border-gray-100">
-            Income Entries
-          </h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-800">
+              Income Entries
+            </h2>
+            <button
+              onClick={() =>
+                exportToXLSX(
+                  filteredIncome.map((e) => ({
+                    Branch: e.branch,
+                    Date: e.date,
+                    Amount: e.amount,
+                  })),
+                  "income-entries"
+                )
+              }
+              className="px-2.5 py-1 text-xs font-medium bg-[#16324F] text-white rounded hover:bg-[#0f2439] transition-colors"
+            >
+              Download XLSX
+            </button>
+          </div>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50">
@@ -266,7 +396,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {incomeEntries.map((entry) => (
+                {filteredIncome.map((entry) => (
                   <tr key={entry.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="p-3">{entry.branch}</td>
                     <td className="p-3">{entry.date}</td>

@@ -26,3 +26,15 @@
 ## Phase 5: Verification
 - [x] Step 16: Run build — ✅ Compiled successfully with zero errors
 
+---
+
+## Phase 6: Date Range Filter & XLSX Export (Added)
+- [x] Step 17: Install `xlsx` and `@types/xlsx` npm packages
+- [x] Step 18: Create `lib/exportUtils.ts` — XLSX export utility using SheetJS
+- [x] Step 19: Add date range filter state (`startDate`, `endDate`) in `page.tsx`
+- [x] Step 20: Add date range filter UI (From/To date inputs + Clear button) in topbar
+- [x] Step 21: Create filtered entries (`filteredIncome`, `filteredClass`, `filteredExtra`) using `useMemo`
+- [x] Step 22: Update KPI / Charts / BranchTable stats to use filtered data
+- [x] Step 23: Add "Download XLSX" buttons to Class Expenses, Extra Expenses, and Income tables
+- [x] Step 24: Build verification — ✅ Compiled successfully with zero errors
+
