@@ -4,7 +4,7 @@ import { ClassExpenseEntry } from "@/types";
 
 interface ClasswiseTableProps {
   entries: ClassExpenseEntry[];
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProps) {

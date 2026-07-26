@@ -2,14 +2,14 @@ export type Branch = "Branch 1" | "Branch 2" | "Branch 3" | "Branch 4";
 export type Period = "daily" | "weekly" | "monthly" | "yearly";
 
 export interface IncomeEntry {
-  id: number;
+  id: string;
   branch: Branch;
   date: string;
   amount: number;
 }
 
 export interface ClassExpenseEntry {
-  id: number;
+  id: string;
   branch: Branch;
   date: string;
   procClass: string;
@@ -19,7 +19,7 @@ export interface ClassExpenseEntry {
 }
 
 export interface ExtraExpenseEntry {
-  id: number;
+  id: string;
   branch: Branch;
   date: string;
   category: string;

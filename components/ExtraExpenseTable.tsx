@@ -4,7 +4,7 @@ import { ExtraExpenseEntry } from "@/types";
 
 interface ExtraExpenseTableProps {
   entries: ExtraExpenseEntry[];
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 export default function ExtraExpenseTable({ entries, onDelete }: ExtraExpenseTableProps) {

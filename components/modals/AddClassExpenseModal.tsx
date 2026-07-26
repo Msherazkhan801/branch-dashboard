@@ -7,11 +7,10 @@ import { BRANCHES, CLASSES } from "@/lib/constants";
 interface AddClassExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: ClassExpenseEntry) => void;
-  nextId: number;
+  onSave: (entry: Omit<ClassExpenseEntry, "id">) => void;
 }
 
-export default function AddClassExpenseModal({ isOpen, onClose, onSave, nextId }: AddClassExpenseModalProps) {
+export default function AddClassExpenseModal({ isOpen, onClose, onSave }: AddClassExpenseModalProps) {
   const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [procClass, setProcClass] = useState(CLASSES[0]);
@@ -26,7 +25,6 @@ export default function AddClassExpenseModal({ isOpen, onClose, onSave, nextId }
     if (!procedures || !customers || !expense) return;
 
     onSave({
-      id: nextId,
       branch,
       date,
       procClass,

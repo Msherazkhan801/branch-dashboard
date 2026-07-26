@@ -7,11 +7,10 @@ import { BRANCHES } from "@/lib/constants";
 interface AddIncomeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: IncomeEntry) => void;
-  nextId: number;
+  onSave: (entry: Omit<IncomeEntry, "id">) => void;
 }
 
-export default function AddIncomeModal({ isOpen, onClose, onSave, nextId }: AddIncomeModalProps) {
+export default function AddIncomeModal({ isOpen, onClose, onSave }: AddIncomeModalProps) {
   const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
@@ -23,7 +22,6 @@ export default function AddIncomeModal({ isOpen, onClose, onSave, nextId }: AddI
     if (!amount || isNaN(Number(amount))) return;
 
     onSave({
-      id: nextId,
       branch,
       date,
       amount: Number(amount),

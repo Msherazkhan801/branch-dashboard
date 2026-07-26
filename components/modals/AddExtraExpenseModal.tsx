@@ -7,12 +7,11 @@ import { BRANCHES, DEFAULT_CATEGORIES } from "@/lib/constants";
 interface AddExtraExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: ExtraExpenseEntry) => void;
-  nextId: number;
+  onSave: (entry: Omit<ExtraExpenseEntry, "id">) => void;
   categories: string[];
 }
 
-export default function AddExtraExpenseModal({ isOpen, onClose, onSave, nextId, categories }: AddExtraExpenseModalProps) {
+export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categories }: AddExtraExpenseModalProps) {
   const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [category, setCategory] = useState(categories[0] || DEFAULT_CATEGORIES[0]);
@@ -29,7 +28,6 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, nextId, 
     const finalCategory = useNewCategory ? newCategory : category;
 
     onSave({
-      id: nextId,
       branch,
       date,
       category: finalCategory,

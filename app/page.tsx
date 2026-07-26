@@ -9,7 +9,20 @@ import {
   Branch,
   BranchStatsMap,
 } from "@/types";
-import { BRANCHES, STORAGE_KEYS, DEFAULT_CATEGORIES } from "@/lib/constants";
+import { BRANCHES, DEFAULT_CATEGORIES } from "@/lib/constants";
+import {
+  fetchIncomeEntries,
+  addIncomeEntry,
+  deleteIncomeEntry,
+  fetchClassExpenseEntries,
+  addClassExpenseEntry,
+  deleteClassExpenseEntry,
+  fetchExtraExpenseEntries,
+  addExtraExpenseEntry,
+  deleteExtraExpenseEntry,
+  fetchCategories,
+  saveCategories,
+} from "@/lib/firestoreService";
 import KPISection from "@/components/KPISection";
 import ChartsSection from "@/components/ChartsSection";
 import BranchTable from "@/components/BranchTable";
@@ -20,86 +33,105 @@ import AddIncomeModal from "@/components/modals/AddIncomeModal";
 import AddClassExpenseModal from "@/components/modals/AddClassExpenseModal";
 import AddExtraExpenseModal from "@/components/modals/AddExtraExpenseModal";
 
-function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) return JSON.parse(stored) as T;
-  } catch {
-    // ignore corrupt data
-  }
-  return fallback;
-}
-
 export default function Dashboard() {
   const [period, setPeriod] = useState<Period>("daily");
-  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>(() =>
-    loadFromStorage(STORAGE_KEYS.INCOME, [])
-  );
-  const [classEntries, setClassEntries] = useState<ClassExpenseEntry[]>(() =>
-    loadFromStorage(STORAGE_KEYS.CLASSWISE_EXPENSE, [])
-  );
-  const [extraEntries, setExtraEntries] = useState<ExtraExpenseEntry[]>(() =>
-    loadFromStorage(STORAGE_KEYS.EXTRA_EXPENSE, [])
-  );
-  const [categories, setCategories] = useState<string[]>(() =>
-    loadFromStorage(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES)
-  );
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
+  const [classEntries, setClassEntries] = useState<ClassExpenseEntry[]>([]);
+  const [extraEntries, setExtraEntries] = useState<ExtraExpenseEntry[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
   // Modal visibility
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
 
-  // Persist to localStorage when state changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(incomeEntries));
-  }, [incomeEntries]);
+  // Loading state
+  const [loading, setLoading] = useState(true);
 
+  // Load all data from Firestore on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CLASSWISE_EXPENSE, JSON.stringify(classEntries));
-  }, [classEntries]);
+    async function loadData() {
+      try {
+        const [income, classExp, extraExp, cats] = await Promise.all([
+          fetchIncomeEntries(),
+          fetchClassExpenseEntries(),
+          fetchExtraExpenseEntries(),
+          fetchCategories(),
+        ]);
+        setIncomeEntries(income);
+        setClassEntries(classExp);
+        setExtraEntries(extraExp);
+        setCategories(cats);
+      } catch (err) {
+        console.error("Error loading data from Firestore:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EXTRA_EXPENSE, JSON.stringify(extraEntries));
-  }, [extraEntries]);
+  const handleAddIncome = useCallback(async (entry: Omit<IncomeEntry, "id">) => {
+    try {
+      const saved = await addIncomeEntry(entry);
+      setIncomeEntries((prev) => [saved, ...prev]);
+    } catch (err) {
+      console.error("Error adding income:", err);
+    }
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-  }, [categories]);
+  const handleAddClassExpense = useCallback(async (entry: Omit<ClassExpenseEntry, "id">) => {
+    try {
+      const saved = await addClassExpenseEntry(entry);
+      setClassEntries((prev) => [saved, ...prev]);
+    } catch (err) {
+      console.error("Error adding class expense:", err);
+    }
+  }, []);
 
-  const getNextId = useCallback(
-    (arr: { id: number }[]) =>
-      arr.length > 0 ? Math.max(...arr.map((e) => e.id)) + 1 : 1,
-    []
+  const handleAddExtraExpense = useCallback(
+    async (entry: Omit<ExtraExpenseEntry, "id">) => {
+      try {
+        const saved = await addExtraExpenseEntry(entry);
+        setExtraEntries((prev) => [saved, ...prev]);
+        // If user added a new category, persist it
+        if (!categories.includes(entry.category)) {
+          const updated = [...categories, entry.category];
+          setCategories(updated);
+          await saveCategories(updated);
+        }
+      } catch (err) {
+        console.error("Error adding extra expense:", err);
+      }
+    },
+    [categories]
   );
 
-  const handleAddIncome = useCallback((entry: IncomeEntry) => {
-    setIncomeEntries((prev) => [...prev, entry]);
-  }, []);
-
-  const handleAddClassExpense = useCallback((entry: ClassExpenseEntry) => {
-    setClassEntries((prev) => [...prev, entry]);
-  }, []);
-
-  const handleAddExtraExpense = useCallback((entry: ExtraExpenseEntry) => {
-    setExtraEntries((prev) => [...prev, entry]);
-    // If user added a new category, persist it
-    if (!categories.includes(entry.category)) {
-      setCategories((prev) => [...prev, entry.category]);
+  const handleDeleteClassEntry = useCallback(async (id: string) => {
+    try {
+      await deleteClassExpenseEntry(id);
+      setClassEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Error deleting class expense:", err);
     }
-  }, [categories]);
-
-  const handleDeleteClassEntry = useCallback((id: number) => {
-    setClassEntries((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  const handleDeleteExtraEntry = useCallback((id: number) => {
-    setExtraEntries((prev) => prev.filter((e) => e.id !== id));
+  const handleDeleteExtraEntry = useCallback(async (id: string) => {
+    try {
+      await deleteExtraExpenseEntry(id);
+      setExtraEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Error deleting extra expense:", err);
+    }
   }, []);
 
-  const handleDeleteIncome = useCallback((id: number) => {
-    setIncomeEntries((prev) => prev.filter((e) => e.id !== id));
+  const handleDeleteIncome = useCallback(async (id: string) => {
+    try {
+      await deleteIncomeEntry(id);
+      setIncomeEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Error deleting income:", err);
+    }
   }, []);
 
   // Compute Branch Aggregations
@@ -131,6 +163,17 @@ export default function Dashboard() {
     },
     {} as BranchStatsMap
   );
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#16324F] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 text-sm">Loading dashboard data...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen p-4 md:p-6">
@@ -206,7 +249,7 @@ export default function Dashboard() {
       {/* Alerts */}
       <AlertsList stats={stats} />
 
-      {/* Income Section (simple list with delete) */}
+      {/* Income Section */}
       {incomeEntries.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
           <h2 className="font-semibold text-gray-800 p-4 border-b border-gray-100">
@@ -251,21 +294,19 @@ export default function Dashboard() {
         isOpen={showIncomeModal}
         onClose={() => setShowIncomeModal(false)}
         onSave={handleAddIncome}
-        nextId={getNextId(incomeEntries)}
       />
       <AddClassExpenseModal
         isOpen={showClassModal}
         onClose={() => setShowClassModal(false)}
         onSave={handleAddClassExpense}
-        nextId={getNextId(classEntries)}
       />
       <AddExtraExpenseModal
         isOpen={showExtraModal}
         onClose={() => setShowExtraModal(false)}
         onSave={handleAddExtraExpense}
-        nextId={getNextId(extraEntries)}
         categories={categories}
       />
     </main>
   );
 }
+
