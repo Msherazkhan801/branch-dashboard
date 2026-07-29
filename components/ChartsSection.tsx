@@ -21,7 +21,7 @@ interface ChartsSectionProps {
 }
 
 export default function ChartsSection({ stats }: ChartsSectionProps) {
-  const labels = BRANCHES;
+  const labels = BRANCHES.filter((b) => stats[b] !== undefined);
   const colors = labels.map((b) => BRANCH_COLORS[b]);
 
   const salesData = {
@@ -71,6 +71,7 @@ export default function ChartsSection({ stats }: ChartsSectionProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      {/* Card 1: Income */}
       <div className="bg-white p-4 rounded-xl border border-gray-200">
         <h2 className="font-semibold text-gray-800 mb-2">Income by Branch</h2>
         <div className="h-56">
@@ -80,6 +81,8 @@ export default function ChartsSection({ stats }: ChartsSectionProps) {
           />
         </div>
       </div>
+
+      {/* Card 2: Customers */}
       <div className="bg-white p-4 rounded-xl border border-gray-200">
         <h2 className="font-semibold text-gray-800 mb-2">Customers by Branch</h2>
         <div className="h-56">
@@ -89,6 +92,8 @@ export default function ChartsSection({ stats }: ChartsSectionProps) {
           />
         </div>
       </div>
+
+      {/* Card 3: Procedures */}
       <div className="bg-white p-4 rounded-xl border border-gray-200">
         <h2 className="font-semibold text-gray-800 mb-2">Procedures Share</h2>
         <div className="h-56">
@@ -98,6 +103,8 @@ export default function ChartsSection({ stats }: ChartsSectionProps) {
           />
         </div>
       </div>
+
+      {/* Card 4: Profit / Loss */}
       <div className="bg-white p-4 rounded-xl border border-gray-200">
         <h2 className="font-semibold text-gray-800 mb-2">Net Profit / Loss</h2>
         <div className="h-56">
@@ -110,4 +117,3 @@ export default function ChartsSection({ stats }: ChartsSectionProps) {
     </div>
   );
 }
-

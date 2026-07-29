@@ -1,40 +1,23 @@
-# Branch Performance Dashboard - Implementation TODO ✅ Complete
+# Branch Performance Dashboard - Feature Implementation
 
-## Phase 1: Foundation
-- [x] Step 1: Create `types/index.ts` - TypeScript interfaces
-- [x] Step 2: Create `lib/constants.ts` - Constants & lookup values
-- [x] Step 3: Create `components/` and `components/modals/` directories
+## Phase 1: Foundation Updates
+- [x] Step 1: Update `types/index.ts` — Add TrendDataPoint type & branch slug mapping
+- [x] Step 2: Update `lib/constants.ts` — Add branch slug/URL mapping
 
-## Phase 2: Core Components
-- [x] Step 4: Create `components/ChartsSection.tsx`
-- [x] Step 5: Create `components/KPISection.tsx`
-- [x] Step 6: Create `components/BranchTable.tsx`
-- [x] Step 7: Create `components/ClasswiseTable.tsx`
-- [x] Step 8: Create `components/ExtraExpenseTable.tsx`
-- [x] Step 9: Create `components/AlertsList.tsx`
+## Phase 2: Sidebar & Layout
+- [x] Step 3: Create `components/Sidebar.tsx` — Sidebar navigation component
+- [x] Step 4: Update `app/layout.tsx` — Integrate sidebar into layout
 
-## Phase 3: Modal Components
-- [x] Step 10: Create `components/modals/AddIncomeModal.tsx`
-- [x] Step 11: Create `components/modals/AddClassExpenseModal.tsx`
-- [x] Step 12: Create `components/modals/AddExtraExpenseModal.tsx`
+## Phase 3: Trend Graph
+- [x] Step 5: Create `components/BranchTrendGraph.tsx` — Period-based trend graph (hidden by default)
 
-## Phase 4: App Assembly & Styling
-- [x] Step 13: Update `app/layout.tsx` — proper metadata & Inter font
-- [x] Step 14: Update `app/globals.css` — clean base styles
-- [x] Step 15: Update `app/page.tsx` — full dashboard with state management
+## Phase 4: Shared Dashboard Component
+- [x] Step 6: Create `components/DashboardContent.tsx` — Extracted shared dashboard logic with optional branch filter
 
-## Phase 5: Verification
-- [x] Step 16: Run build — ✅ Compiled successfully with zero errors
+## Phase 5: Pages
+- [x] Step 7: Update `app/page.tsx` — Main dashboard (all branches aggregated, uses DashboardContent)
+- [x] Step 8: Create `app/branch/[branchId]/page.tsx` — Dynamic per-branch pages
 
----
-
-## Phase 6: Date Range Filter & XLSX Export (Added)
-- [x] Step 17: Install `xlsx` and `@types/xlsx` npm packages
-- [x] Step 18: Create `lib/exportUtils.ts` — XLSX export utility using SheetJS
-- [x] Step 19: Add date range filter state (`startDate`, `endDate`) in `page.tsx`
-- [x] Step 20: Add date range filter UI (From/To date inputs + Clear button) in topbar
-- [x] Step 21: Create filtered entries (`filteredIncome`, `filteredClass`, `filteredExtra`) using `useMemo`
-- [x] Step 22: Update KPI / Charts / BranchTable stats to use filtered data
-- [x] Step 23: Add "Download XLSX" buttons to Class Expenses, Extra Expenses, and Income tables
-- [x] Step 24: Build verification — ✅ Compiled successfully with zero errors
+## Phase 6: Verification
+- [x] Step 9: Build verification — `npm run build` with zero errors ✅
 

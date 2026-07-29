@@ -8,7 +8,8 @@ interface KPISectionProps {
 }
 
 export default function KPISection({ stats }: KPISectionProps) {
-  const totals = BRANCHES.reduce(
+  const availableBranches = BRANCHES.filter((b) => stats[b] !== undefined);
+  const totals = availableBranches.reduce(
     (acc, b) => ({
       income: acc.income + stats[b].income,
       expense: acc.expense + stats[b].expense,
@@ -42,4 +43,3 @@ export default function KPISection({ stats }: KPISectionProps) {
     </div>
   );
 }
-

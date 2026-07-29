@@ -12,7 +12,7 @@ export default function AlertsList({ stats }: AlertsListProps) {
 
   BRANCHES.forEach((branch) => {
     const s = stats[branch];
-    const net = s.income - s.expense;
+    const net = s?.income - s?.expense;
 
     if (net < 0) {
       alerts.push({
@@ -28,7 +28,7 @@ export default function AlertsList({ stats }: AlertsListProps) {
       });
     }
 
-    if (s.customers === 0 && s.procedures > 0) {
+    if (s?.customers === 0 && s?.procedures > 0) {
       alerts.push({
         branch,
         message: `Procedures recorded (${s.procedures}) but no customers logged.`,

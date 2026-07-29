@@ -1,4 +1,5 @@
 export type Branch = "Branch 1" | "Branch 2" | "Branch 3" | "Branch 4";
+export type BranchSlug = "branch-1" | "branch-2" | "branch-3" | "branch-4";
 export type Period = "daily" | "weekly" | "monthly" | "yearly";
 
 export interface IncomeEntry {
@@ -34,4 +35,12 @@ export interface BranchStats {
 }
 
 export type BranchStatsMap = Record<Branch, BranchStats>;
+
+export interface TrendDataPoint {
+  label: string;
+  income: number;
+  expense: number;
+  procedures: number;
+  customers: number;
+}
 
