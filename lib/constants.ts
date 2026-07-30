@@ -60,7 +60,7 @@ export const DEFAULT_CATEGORIES = ["Rent", "Salary", "Other Expenses"];
 
 export const STORAGE_KEYS = {
   INCOME: "branch_dashboard_income",
-  CLASSWISE_EXPENSE: "branch_dashboard_classwise_expense",
+  CLASSWISE_INCOME: "branch_dashboard_classwise_income",
   EXTRA_EXPENSE: "branch_dashboard_extra_expense",
   CATEGORIES: "branch_dashboard_expense_categories",
 };

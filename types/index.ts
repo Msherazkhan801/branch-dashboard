@@ -9,14 +9,14 @@ export interface IncomeEntry {
   amount: number;
 }
 
-export interface ClassExpenseEntry {
+export interface ClassIncomeEntry {
   id: string;
   branch: Branch;
   date: string;
   procClass: string;
   procedures: number;
   customers: number;
-  expense: number;
+  income: number;
 }
 
 export interface ExtraExpenseEntry {
@@ -43,4 +43,3 @@ export interface TrendDataPoint {
   procedures: number;
   customers: number;
 }
-

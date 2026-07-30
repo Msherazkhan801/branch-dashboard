@@ -10,12 +10,12 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { IncomeEntry, ClassExpenseEntry, ExtraExpenseEntry } from "@/types";
+import { IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry } from "@/types";
 import { DEFAULT_CATEGORIES } from "./constants";
 
 // ---------- Collections ----------
 const INCOME_COLLECTION = "income";
-const CLASS_EXPENSE_COLLECTION = "classwiseExpense";
+const CLASS_INCOME_COLLECTION = "classwiseIncome";
 const EXTRA_EXPENSE_COLLECTION = "extraExpense";
 const CATEGORIES_DOC = "categories";
 const CATEGORIES_COLLECTION = "appConfig";
@@ -52,10 +52,10 @@ export async function deleteIncomeEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, INCOME_COLLECTION, id));
 }
 
-// ===================== CLASS EXPENSE =====================
+// ===================== CLASS INCOME =====================
 
-export async function fetchClassExpenseEntries(): Promise<ClassExpenseEntry[]> {
-  const q = query(collection(db, CLASS_EXPENSE_COLLECTION), orderBy("date", "desc"));
+export async function fetchClassIncomeEntries(): Promise<ClassIncomeEntry[]> {
+  const q = query(collection(db, CLASS_INCOME_COLLECTION), orderBy("date", "desc"));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => ({
     id: d.id,
@@ -64,24 +64,24 @@ export async function fetchClassExpenseEntries(): Promise<ClassExpenseEntry[]> {
     procClass: d.data().procClass,
     procedures: d.data().procedures,
     customers: d.data().customers,
-    expense: d.data().expense,
-  })) as ClassExpenseEntry[];
+    income: d.data().income,
+  })) as ClassIncomeEntry[];
 }
 
-export async function addClassExpenseEntry(entry: Omit<ClassExpenseEntry, "id">): Promise<ClassExpenseEntry> {
-  const docRef = await addDoc(collection(db, CLASS_EXPENSE_COLLECTION), {
+export async function addClassIncomeEntry(entry: Omit<ClassIncomeEntry, "id">): Promise<ClassIncomeEntry> {
+  const docRef = await addDoc(collection(db, CLASS_INCOME_COLLECTION), {
     branch: entry.branch,
     date: Timestamp.fromDate(new Date(entry.date)),
     procClass: entry.procClass,
     procedures: entry.procedures,
     customers: entry.customers,
-    expense: entry.expense,
+    income: entry.income,
   });
   return { ...entry, id: docRef.id };
 }
 
-export async function deleteClassExpenseEntry(id: string): Promise<void> {
-  await deleteDoc(doc(db, CLASS_EXPENSE_COLLECTION, id));
+export async function deleteClassIncomeEntry(id: string): Promise<void> {
+  await deleteDoc(doc(db, CLASS_INCOME_COLLECTION, id));
 }
 
 // ===================== EXTRA EXPENSE =====================
@@ -133,4 +133,3 @@ export async function saveCategories(categories: string[]): Promise<void> {
   const { setDoc } = await import("firebase/firestore");
   await setDoc(docRef, { list: categories });
 }
-

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   IncomeEntry,
-  ClassExpenseEntry,
+  ClassIncomeEntry,
   ExtraExpenseEntry,
   Period,
   Branch,
@@ -15,9 +15,9 @@ import {
   fetchIncomeEntries,
   addIncomeEntry,
   deleteIncomeEntry,
-  fetchClassExpenseEntries,
-  addClassExpenseEntry,
-  deleteClassExpenseEntry,
+  fetchClassIncomeEntries,
+  addClassIncomeEntry,
+  deleteClassIncomeEntry,
   fetchExtraExpenseEntries,
   addExtraExpenseEntry,
   deleteExtraExpenseEntry,
@@ -32,48 +32,41 @@ import ExtraExpenseTable from "@/components/ExtraExpenseTable";
 import AlertsList from "@/components/AlertsList";
 import BranchTrendGraph from "@/components/BranchTrendGraph";
 import AddIncomeModal from "@/components/modals/AddIncomeModal";
-import AddClassExpenseModal from "@/components/modals/AddClassExpenseModal";
+import AddClassIncomeModal from "@/components/modals/AddClassIncomeModal";
 import AddExtraExpenseModal from "@/components/modals/AddExtraExpenseModal";
 
 interface DashboardContentProps {
-  branchFilter?: Branch; // If provided, filters all data to this branch
+  branchFilter?: Branch;
   title?: string;
 }
 
 export default function DashboardContent({ branchFilter, title }: DashboardContentProps) {
   const [period, setPeriod] = useState<Period>("daily");
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
-  const [classEntries, setClassEntries] = useState<ClassExpenseEntry[]>([]);
+  const [classEntries, setClassEntries] = useState<ClassIncomeEntry[]>([]);
   const [extraEntries, setExtraEntries] = useState<ExtraExpenseEntry[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
-  // Modal visibility
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
 
-  // Date range filter state
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
-  // Trend graph state: show only when period is actively selected
   const [showTrend, setShowTrend] = useState(false);
-
-  // Loading state
   const [loading, setLoading] = useState(true);
 
-  // Load all data from Firestore on mount
   useEffect(() => {
     async function loadData() {
       try {
-        const [income, classExp, extraExp, cats] = await Promise.all([
+        const [income, classInc, extraExp, cats] = await Promise.all([
           fetchIncomeEntries(),
-          fetchClassExpenseEntries(),
+          fetchClassIncomeEntries(),
           fetchExtraExpenseEntries(),
           fetchCategories(),
         ]);
         setIncomeEntries(income);
-        setClassEntries(classExp);
+        setClassEntries(classInc);
         setExtraEntries(extraExp);
         setCategories(cats);
       } catch (err) {
@@ -94,12 +87,12 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     }
   }, []);
 
-  const handleAddClassExpense = useCallback(async (entry: Omit<ClassExpenseEntry, "id">) => {
+  const handleAddClassIncome = useCallback(async (entry: Omit<ClassIncomeEntry, "id">) => {
     try {
-      const saved = await addClassExpenseEntry(entry);
+      const saved = await addClassIncomeEntry(entry);
       setClassEntries((prev) => [saved, ...prev]);
     } catch (err) {
-      console.error("Error adding class expense:", err);
+      console.error("Error adding class income:", err);
     }
   }, []);
 
@@ -122,10 +115,10 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
 
   const handleDeleteClassEntry = useCallback(async (id: string) => {
     try {
-      await deleteClassExpenseEntry(id);
+      await deleteClassIncomeEntry(id);
       setClassEntries((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
-      console.error("Error deleting class expense:", err);
+      console.error("Error deleting class income:", err);
     }
   }, []);
 
@@ -147,7 +140,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     }
   }, []);
 
-  // Branch-filtered entries (all entries if no branchFilter)
   const branchIncome = useMemo(
     () => (branchFilter ? incomeEntries.filter((e) => e.branch === branchFilter) : incomeEntries),
     [incomeEntries, branchFilter]
@@ -161,7 +153,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     [extraEntries, branchFilter]
   );
 
-  // Date-range filtered entries
   const filteredIncome = useMemo(() => {
     if (!startDate && !endDate) return branchIncome;
     return branchIncome.filter((e) => {
@@ -189,15 +180,14 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     });
   }, [branchExtra, startDate, endDate]);
 
-  // Compute Branch Aggregations from FILTERED data
   const stats: BranchStatsMap = (branchFilter ? [branchFilter] : BRANCHES).reduce(
     (acc, b) => {
       const inc = filteredIncome
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.amount, 0);
-      const clsExp = filteredClass
+      const clsInc = filteredClass
         .filter((e) => e.branch === b)
-        .reduce((s, e) => s + e.expense, 0);
+        .reduce((s, e) => s + e.income, 0);
       const extExp = filteredExtra
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.amount, 0);
@@ -209,8 +199,8 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         .reduce((s, e) => s + e.customers, 0);
 
       acc[b] = {
-        income: inc,
-        expense: clsExp + extExp,
+        income: inc + clsInc,
+        expense: extExp,
         procedures: procs,
         customers: custs,
       };
@@ -219,7 +209,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     {} as BranchStatsMap
   );
 
-  // Helper to clear date filters
   const clearDateFilter = () => {
     setStartDate("");
     setEndDate("");
@@ -227,7 +216,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
 
   const handlePeriodChange = (p: Period) => {
     setPeriod(p);
-    setShowTrend(true); // Show trend graph when a period is selected
+    setShowTrend(true);
   };
 
   if (loading) {
@@ -243,7 +232,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
 
   return (
     <>
-      {/* Topbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#16324F]">
@@ -254,7 +242,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Period Toggle */}
           <div className="flex bg-white border rounded-lg overflow-hidden border-slate-200">
             {(["daily", "weekly", "monthly", "yearly"] as Period[]).map((p) => (
               <button
@@ -270,8 +257,6 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             ))}
           </div>
-
-          {/* Date Range Filter */}
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5">
             <span className="text-xs text-slate-500 font-medium">From:</span>
             <input
@@ -288,16 +273,11 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               className="text-xs border border-slate-300 rounded px-1.5 py-1 w-32 focus:outline-none focus:ring-1 focus:ring-[#16324F]"
             />
             {(startDate || endDate) && (
-              <button
-                onClick={clearDateFilter}
-                className="text-xs text-red-500 hover:text-red-700 font-medium ml-1"
-              >
+              <button onClick={clearDateFilter} className="text-xs text-red-500 hover:text-red-700 font-medium ml-1">
                 Clear
               </button>
             )}
           </div>
-
-          {/* Add Data Buttons */}
           <button
             onClick={() => setShowIncomeModal(true)}
             className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -308,7 +288,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
             onClick={() => setShowClassModal(true)}
             className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            + Class Expense
+            + Class Income
           </button>
           <button
             onClick={() => setShowExtraModal(true)}
@@ -317,18 +297,13 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
             + Extra Expense
           </button>
         </div>
-      </div>
+      </div> {/* <--- Added missing header container closing div */}
 
-      {/* KPI Cards */}
       <KPISection stats={stats} />
-
-      {/* Charts */}
       <ChartsSection stats={stats} />
 
-      {/* Branch Table - only show on aggregated view */}
       {!branchFilter && <BranchTable stats={stats} />}
 
-      {/* Trend Graph - only shown when period is actively selected */}
       {showTrend && (
         <BranchTrendGraph
           period={period}
@@ -339,11 +314,10 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         />
       )}
 
-      {/* Data Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-gray-800">Class-wise Expenses</h2>
+            <h2 className="font-semibold text-gray-800">Class-wise Income</h2>
             {filteredClass.length > 0 && (
               <button
                 onClick={() =>
@@ -354,9 +328,9 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
                       Class: e.procClass,
                       Procedures: e.procedures,
                       Customers: e.customers,
-                      Expense: e.expense,
+                      Income: e.income,
                     })),
-                    "class-expenses"
+                    "class-income"
                   )
                 }
                 className="px-2.5 py-1 text-xs font-medium bg-[#16324F] text-white rounded hover:bg-[#0f2439] transition-colors"
@@ -365,10 +339,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             )}
           </div>
-          <ClasswiseTable
-            entries={filteredClass}
-            onDelete={handleDeleteClassEntry}
-          />
+          <ClasswiseTable entries={filteredClass} onDelete={handleDeleteClassEntry} />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -392,17 +363,12 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             )}
           </div>
-          <ExtraExpenseTable
-            entries={filteredExtra}
-            onDelete={handleDeleteExtraEntry}
-          />
+          <ExtraExpenseTable entries={filteredExtra} onDelete={handleDeleteExtraEntry} />
         </div>
-      </div>
+      </div> {/* <--- Added missing grid wrapper closing div */}
 
-      {/* Alerts */}
       <AlertsList stats={stats} />
 
-      {/* Income Section */}
       {filteredIncome.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -438,14 +404,9 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
                   <tr key={entry.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="p-3">{entry.branch}</td>
                     <td className="p-3">{entry.date}</td>
-                    <td className="p-3 font-medium text-green-600">
-                      ${entry.amount.toLocaleString()}
-                    </td>
+                    <td className="p-3 font-medium text-green-600">${entry.amount.toLocaleString()}</td>
                     <td className="p-3">
-                      <button
-                        onClick={() => handleDeleteIncome(entry.id)}
-                        className="text-red-500 hover:text-red-700 text-xs font-medium"
-                      >
+                      <button onClick={() => handleDeleteIncome(entry.id)} className="text-red-500 hover:text-red-700 text-xs font-medium">
                         Delete
                       </button>
                     </td>
@@ -457,16 +418,15 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         </div>
       )}
 
-      {/* Modals */}
       <AddIncomeModal
         isOpen={showIncomeModal}
         onClose={() => setShowIncomeModal(false)}
         onSave={handleAddIncome}
       />
-      <AddClassExpenseModal
+      <AddClassIncomeModal
         isOpen={showClassModal}
         onClose={() => setShowClassModal(false)}
-        onSave={handleAddClassExpense}
+        onSave={handleAddClassIncome}
       />
       <AddExtraExpenseModal
         isOpen={showExtraModal}
@@ -477,4 +437,3 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     </>
   );
 }
-

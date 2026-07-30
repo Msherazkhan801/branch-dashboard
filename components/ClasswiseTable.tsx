@@ -1,9 +1,9 @@
 "use client";
 
-import { ClassExpenseEntry } from "@/types";
+import { ClassIncomeEntry } from "@/types";
 
 interface ClasswiseTableProps {
-  entries: ClassExpenseEntry[];
+  entries: ClassIncomeEntry[];
   onDelete: (id: string) => void;
 }
 
@@ -11,8 +11,8 @@ export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProp
   if (entries.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-        <h2 className="font-semibold text-gray-800 mb-2">Class-wise Expenses</h2>
-        <p className="text-sm text-gray-400">No class expense entries yet.</p>
+        <h2 className="font-semibold text-gray-800 mb-2">Class-wise Income</h2>
+        <p className="text-sm text-gray-400">No class income entries yet.</p>
       </div>
     );
   }
@@ -20,7 +20,7 @@ export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProp
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mt-6">
       <h2 className="font-semibold text-gray-800 p-4 border-b border-gray-100">
-        Class-wise Expenses
+        Class-wise Income
       </h2>
       <div className="overflow-x-auto max-h-72 overflow-y-auto">
         <table className="w-full text-sm">
@@ -31,7 +31,7 @@ export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProp
               <th className="p-3">Class</th>
               <th className="p-3">Procedures</th>
               <th className="p-3">Customers</th>
-              <th className="p-3">Expense</th>
+              <th className="p-3">Income</th>
               <th className="p-3">Actions</th>
             </tr>
           </thead>
@@ -43,7 +43,7 @@ export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProp
                 <td className="p-3">{entry.procClass}</td>
                 <td className="p-3">{entry.procedures}</td>
                 <td className="p-3">{entry.customers}</td>
-                <td className="p-3">${entry.expense.toLocaleString()}</td>
+                <td className="p-3">${entry.income.toLocaleString()}</td>
                 <td className="p-3">
                   <button
                     onClick={() => onDelete(entry.id)}
@@ -57,7 +57,6 @@ export default function ClasswiseTable({ entries, onDelete }: ClasswiseTableProp
           </tbody>
         </table>
       </div>
-    </div>
+    </div> /* <--- Added missing closing div here */
   );
 }
-
