@@ -27,6 +27,23 @@ export interface ExtraExpenseEntry {
   amount: number;
 }
 
+export interface HeadOfficeExpenseEntry {
+  id: string;
+  date: string;
+  category: string;
+  amount: number;
+}
+
+export interface ClassExpenseEntry {
+  id: string;
+  branch: Branch;
+  date: string;
+  procClass: string;
+  procedures: number;
+  customers: number;
+  expense: number;
+}
+
 export interface BranchStats {
   income: number;
   expense: number;

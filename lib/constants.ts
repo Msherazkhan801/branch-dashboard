@@ -38,6 +38,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Branch 2", href: "/branch/branch-2", icon: "🏢" },
   { label: "Branch 3", href: "/branch/branch-3", icon: "🏢" },
   { label: "Branch 4", href: "/branch/branch-4", icon: "🏢" },
+  { label: "Head Office", href: "/head-office", icon: "🏛️" },
 ];
 
 export const CLASSES = [

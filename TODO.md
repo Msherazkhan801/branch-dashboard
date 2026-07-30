@@ -1,23 +1,22 @@
-# Branch Performance Dashboard - Feature Implementation
+# Head Office Expense Feature - Implementation Steps
 
-## Phase 1: Foundation Updates
-- [x] Step 1: Update `types/index.ts` — Add TrendDataPoint type & branch slug mapping
-- [x] Step 2: Update `lib/constants.ts` — Add branch slug/URL mapping
+## Step 1: Update Types
+- [x] Add `HeadOfficeExpenseEntry` interface to `types/index.ts`
 
-## Phase 2: Sidebar & Layout
-- [x] Step 3: Create `components/Sidebar.tsx` — Sidebar navigation component
-- [x] Step 4: Update `app/layout.tsx` — Integrate sidebar into layout
+## Step 2: Update Firestore Service
+- [x] Add fetch/add/delete methods for head office expenses in `lib/firestoreService.ts`
 
-## Phase 3: Trend Graph
-- [x] Step 5: Create `components/BranchTrendGraph.tsx` — Period-based trend graph (hidden by default)
+## Step 3: Create Add Head Office Expense Modal
+- [x] Create `components/modals/AddHeadOfficeExpenseModal.tsx`
 
-## Phase 4: Shared Dashboard Component
-- [x] Step 6: Create `components/DashboardContent.tsx` — Extracted shared dashboard logic with optional branch filter
+## Step 4: Create Head Office Expense Table
+- [x] Create `components/HeadOfficeExpenseTable.tsx`
 
-## Phase 5: Pages
-- [x] Step 7: Update `app/page.tsx` — Main dashboard (all branches aggregated, uses DashboardContent)
-- [x] Step 8: Create `app/branch/[branchId]/page.tsx` — Dynamic per-branch pages
+## Step 5: Create Head Office Expense Graph
+- [x] Create `components/HeadOfficeExpenseGraph.tsx`
 
-## Phase 6: Verification
-- [x] Step 9: Build verification — `npm run build` with zero errors ✅
+## Step 6: Update DashboardContent
+- [x] Update `components/DashboardContent.tsx` to include head office expenses
 
+## Step 7: Build Verification
+- [x] Run `npx tsc --noEmit` - No new errors from head office changes (2 pre-existing errors unrelated to this feature)

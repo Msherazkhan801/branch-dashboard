@@ -10,13 +10,14 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry } from "@/types";
+import { IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry, HeadOfficeExpenseEntry } from "@/types";
 import { DEFAULT_CATEGORIES } from "./constants";
 
 // ---------- Collections ----------
 const INCOME_COLLECTION = "income";
 const CLASS_INCOME_COLLECTION = "classwiseIncome";
 const EXTRA_EXPENSE_COLLECTION = "extraExpense";
+const HEAD_OFFICE_EXPENSE_COLLECTION = "headOfficeExpense";
 const CATEGORIES_DOC = "categories";
 const CATEGORIES_COLLECTION = "appConfig";
 
@@ -110,6 +111,32 @@ export async function addExtraExpenseEntry(entry: Omit<ExtraExpenseEntry, "id">)
 
 export async function deleteExtraExpenseEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, EXTRA_EXPENSE_COLLECTION, id));
+}
+
+// ===================== HEAD OFFICE EXPENSE =====================
+
+export async function fetchHeadOfficeExpenseEntries(): Promise<HeadOfficeExpenseEntry[]> {
+  const q = query(collection(db, HEAD_OFFICE_EXPENSE_COLLECTION), orderBy("date", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    date: toDateString(d.data().date),
+    category: d.data().category,
+    amount: d.data().amount,
+  })) as HeadOfficeExpenseEntry[];
+}
+
+export async function addHeadOfficeExpenseEntry(entry: Omit<HeadOfficeExpenseEntry, "id">): Promise<HeadOfficeExpenseEntry> {
+  const docRef = await addDoc(collection(db, HEAD_OFFICE_EXPENSE_COLLECTION), {
+    date: Timestamp.fromDate(new Date(entry.date)),
+    category: entry.category,
+    amount: entry.amount,
+  });
+  return { ...entry, id: docRef.id };
+}
+
+export async function deleteHeadOfficeExpenseEntry(id: string): Promise<void> {
+  await deleteDoc(doc(db, HEAD_OFFICE_EXPENSE_COLLECTION, id));
 }
 
 // ===================== CATEGORIES =====================

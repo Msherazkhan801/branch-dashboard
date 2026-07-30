@@ -15,7 +15,7 @@ import {
   Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Branch, Period, IncomeEntry, ClassExpenseEntry, ExtraExpenseEntry, TrendDataPoint } from "@/types";
+import { Branch, Period, IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry, TrendDataPoint } from "@/types";
 import { BRANCHES, BRANCH_COLORS } from "@/lib/constants";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
@@ -23,7 +23,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 interface BranchTrendGraphProps {
   period: Period;
   incomeEntries: IncomeEntry[];
-  classEntries: ClassExpenseEntry[];
+  classEntries: ClassIncomeEntry[];
   extraEntries: ExtraExpenseEntry[];
   branchFilter?: Branch; // If provided, show only this branch
 }
@@ -108,11 +108,11 @@ export default function BranchTrendGraph({
     [filteredIncome, period]
   );
 
-  // Group class expenses by period
+  // Group class income by period
   const classTrend = useMemo(
     () =>
       groupByPeriod(
-        filteredClass.map((e) => ({ date: e.date, expense: e.expense, procedures: e.procedures, customers: e.customers })),
+        filteredClass.map((e) => ({ date: e.date, amount: e.income, procedures: e.procedures, customers: e.customers })),
         period
       ),
     [filteredClass, period]
@@ -140,7 +140,7 @@ export default function BranchTrendGraph({
         map.set(point.label, { label: point.label, income: 0, expense: 0, procedures: 0, customers: 0 });
       }
       const current = map.get(point.label)!;
-      current.expense += point.expense;
+      current.income += point.income;
       current.procedures += point.procedures;
       current.customers += point.customers;
     }

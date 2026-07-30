@@ -5,6 +5,7 @@ import {
   IncomeEntry,
   ClassIncomeEntry,
   ExtraExpenseEntry,
+  HeadOfficeExpenseEntry,
   Period,
   Branch,
   BranchStatsMap,
@@ -21,6 +22,9 @@ import {
   fetchExtraExpenseEntries,
   addExtraExpenseEntry,
   deleteExtraExpenseEntry,
+  fetchHeadOfficeExpenseEntries,
+  addHeadOfficeExpenseEntry,
+  deleteHeadOfficeExpenseEntry,
   fetchCategories,
   saveCategories,
 } from "@/lib/firestoreService";
@@ -29,11 +33,14 @@ import ChartsSection from "@/components/ChartsSection";
 import BranchTable from "@/components/BranchTable";
 import ClasswiseTable from "@/components/ClasswiseTable";
 import ExtraExpenseTable from "@/components/ExtraExpenseTable";
+import HeadOfficeExpenseTable from "@/components/HeadOfficeExpenseTable";
+import HeadOfficeExpenseGraph from "@/components/HeadOfficeExpenseGraph";
 import AlertsList from "@/components/AlertsList";
 import BranchTrendGraph from "@/components/BranchTrendGraph";
 import AddIncomeModal from "@/components/modals/AddIncomeModal";
 import AddClassIncomeModal from "@/components/modals/AddClassIncomeModal";
 import AddExtraExpenseModal from "@/components/modals/AddExtraExpenseModal";
+import AddHeadOfficeExpenseModal from "@/components/modals/AddHeadOfficeExpenseModal";
 
 interface DashboardContentProps {
   branchFilter?: Branch;
@@ -45,11 +52,13 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
   const [classEntries, setClassEntries] = useState<ClassIncomeEntry[]>([]);
   const [extraEntries, setExtraEntries] = useState<ExtraExpenseEntry[]>([]);
+  const [headOfficeEntries, setHeadOfficeEntries] = useState<HeadOfficeExpenseEntry[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
+  const [showHeadOfficeModal, setShowHeadOfficeModal] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -59,15 +68,17 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
   useEffect(() => {
     async function loadData() {
       try {
-        const [income, classInc, extraExp, cats] = await Promise.all([
+        const [income, classInc, extraExp, headOfficeExp, cats] = await Promise.all([
           fetchIncomeEntries(),
           fetchClassIncomeEntries(),
           fetchExtraExpenseEntries(),
+          fetchHeadOfficeExpenseEntries(),
           fetchCategories(),
         ]);
         setIncomeEntries(income);
         setClassEntries(classInc);
         setExtraEntries(extraExp);
+        setHeadOfficeEntries(headOfficeExp);
         setCategories(cats);
       } catch (err) {
         console.error("Error loading data from Firestore:", err);
@@ -113,6 +124,23 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     [categories]
   );
 
+  const handleAddHeadOfficeExpense = useCallback(
+    async (entry: Omit<HeadOfficeExpenseEntry, "id">) => {
+      try {
+        const saved = await addHeadOfficeExpenseEntry(entry);
+        setHeadOfficeEntries((prev) => [saved, ...prev]);
+        if (!categories.includes(entry.category)) {
+          const updated = [...categories, entry.category];
+          setCategories(updated);
+          await saveCategories(updated);
+        }
+      } catch (err) {
+        console.error("Error adding head office expense:", err);
+      }
+    },
+    [categories]
+  );
+
   const handleDeleteClassEntry = useCallback(async (id: string) => {
     try {
       await deleteClassIncomeEntry(id);
@@ -128,6 +156,15 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
       setExtraEntries((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       console.error("Error deleting extra expense:", err);
+    }
+  }, []);
+
+  const handleDeleteHeadOfficeEntry = useCallback(async (id: string) => {
+    try {
+      await deleteHeadOfficeExpenseEntry(id);
+      setHeadOfficeEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Error deleting head office expense:", err);
     }
   }, []);
 
@@ -180,6 +217,21 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     });
   }, [branchExtra, startDate, endDate]);
 
+  const filteredHeadOffice = useMemo(() => {
+    if (!startDate && !endDate) return headOfficeEntries;
+    return headOfficeEntries.filter((e) => {
+      if (startDate && e.date < startDate) return false;
+      if (endDate && e.date > endDate) return false;
+      return true;
+    });
+  }, [headOfficeEntries, startDate, endDate]);
+
+  // Calculate total head office expense for the filtered period
+  const totalHeadOfficeExpense = useMemo(
+    () => filteredHeadOffice.reduce((sum, e) => sum + e.amount, 0),
+    [filteredHeadOffice]
+  );
+
   const stats: BranchStatsMap = (branchFilter ? [branchFilter] : BRANCHES).reduce(
     (acc, b) => {
       const inc = filteredIncome
@@ -198,9 +250,16 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.customers, 0);
 
+      // Branch expense includes its own extra expenses + proportional share of head office
+      // For simplicity, we add head office expense to each branch's expense
+      // But since the stats map is per branch, we'll add head office to total in KPISection
+      // Instead, we distribute head office expense equally across branches
+      const branchCount = branchFilter ? 1 : BRANCHES.length;
+      const hoShare = totalHeadOfficeExpense / branchCount;
+
       acc[b] = {
         income: inc + clsInc,
-        expense: extExp,
+        expense: extExp + hoShare,
         procedures: procs,
         customers: custs,
       };
@@ -296,8 +355,14 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
           >
             + Extra Expense
           </button>
+          <button
+            onClick={() => setShowHeadOfficeModal(true)}
+            className="px-3 py-1.5 text-xs font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            + Head Office Expense
+          </button>
         </div>
-      </div> {/* <--- Added missing header container closing div */}
+      </div>
 
       <KPISection stats={stats} />
       <ChartsSection stats={stats} />
@@ -365,7 +430,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
           </div>
           <ExtraExpenseTable entries={filteredExtra} onDelete={handleDeleteExtraEntry} />
         </div>
-      </div> {/* <--- Added missing grid wrapper closing div */}
+      </div>
 
       <AlertsList stats={stats} />
 
@@ -418,6 +483,45 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         </div>
       )}
 
+      {/* Head Office Section */}
+      {!branchFilter && (
+        <div className="mt-6 border-t-2 border-dashed border-gray-300 pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">🏢</span>
+            <h2 className="text-xl font-bold text-[#16324F]">Head Office</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold text-gray-800">Head Office Expenses</h2>
+                {filteredHeadOffice.length > 0 && (
+                  <button
+                    onClick={() =>
+                      exportToXLSX(
+                        filteredHeadOffice.map((e) => ({
+                          Date: e.date,
+                          Category: e.category,
+                          Amount: e.amount,
+                        })),
+                        "head-office-expenses"
+                      )
+                    }
+                    className="px-2.5 py-1 text-xs font-medium bg-[#16324F] text-white rounded hover:bg-[#0f2439] transition-colors"
+                  >
+                    Download XLSX
+                  </button>
+                )}
+              </div>
+              <HeadOfficeExpenseTable entries={filteredHeadOffice} onDelete={handleDeleteHeadOfficeEntry} />
+            </div>
+            <div>
+              <HeadOfficeExpenseGraph period={period} entries={filteredHeadOffice} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <AddIncomeModal
         isOpen={showIncomeModal}
         onClose={() => setShowIncomeModal(false)}
@@ -432,6 +536,12 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         isOpen={showExtraModal}
         onClose={() => setShowExtraModal(false)}
         onSave={handleAddExtraExpense}
+        categories={categories}
+      />
+      <AddHeadOfficeExpenseModal
+        isOpen={showHeadOfficeModal}
+        onClose={() => setShowHeadOfficeModal(false)}
+        onSave={handleAddHeadOfficeExpense}
         categories={categories}
       />
     </>
