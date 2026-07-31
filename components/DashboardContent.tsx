@@ -37,6 +37,8 @@ import HeadOfficeExpenseTable from "@/components/HeadOfficeExpenseTable";
 import HeadOfficeExpenseGraph from "@/components/HeadOfficeExpenseGraph";
 import AlertsList from "@/components/AlertsList";
 import BranchTrendGraph from "@/components/BranchTrendGraph";
+import ClassProcedureComparison from "@/components/ClassProcedureComparison";
+import BranchProcedurePieChart from "@/components/BranchProcedurePieChart";
 import AddIncomeModal from "@/components/modals/AddIncomeModal";
 import AddClassIncomeModal from "@/components/modals/AddClassIncomeModal";
 import AddExtraExpenseModal from "@/components/modals/AddExtraExpenseModal";
@@ -378,6 +380,12 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
           branchFilter={branchFilter}
         />
       )}
+
+      {/* Class Procedure Comparison - shows per-class procedure comparison across branches */}
+      {!branchFilter && <ClassProcedureComparison classEntries={filteredClass} />}
+
+      {/* Branch Procedure Pie Chart - shows class distribution for a specific branch */}
+      {branchFilter && <BranchProcedurePieChart branch={branchFilter} classEntries={filteredClass} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div>

@@ -1,13 +1,10 @@
-# Branch Procedure Comparison Bar Chart - Implementation Steps
+# TODO - Class Procedure Comparison & Pie Chart
 
-## Step 1: Update BranchTrendGraph.tsx
-- [x] Replace Line chart with Bar chart
-- [x] Remove income, expense, net profit/loss datasets
-- [x] Group procedures by period AND by branch
-- [x] Add class-wise breakdown in tooltips
-- [x] Show class-wise procedure bars when branchFilter is active
+## Steps
 
-## Step 2: Build Verification
-- [x] Run `npx tsc --noEmit` ✅ No errors
-- [ ] Test in browser
+- [x] Step 1: Analyze codebase and plan
+- [x] Step 2: Create `ClassProcedureComparison.tsx` - Grouped bar chart (class vs branch) for main dashboard
+- [x] Step 3: Create `BranchProcedurePieChart.tsx` - Pie chart (class distribution) for branch pages
+- [x] Step 4: Update `DashboardContent.tsx` - Integrate both new components
+- [x] Step 5: Build verification - Success ✓
 
