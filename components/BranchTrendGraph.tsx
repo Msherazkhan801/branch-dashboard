@@ -6,27 +6,41 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
   Title,
   Tooltip,
   Legend,
-  Filler,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
-import { Branch, Period, IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry, TrendDataPoint } from "@/types";
-import { BRANCHES, BRANCH_COLORS } from "@/lib/constants";
+import { Bar } from "react-chartjs-2";
+import { Branch, Period, ClassIncomeEntry } from "@/types";
+import { BRANCHES, BRANCH_COLORS, CLASSES } from "@/lib/constants";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface BranchTrendGraphProps {
   period: Period;
-  incomeEntries: IncomeEntry[];
+  incomeEntries: any[];
   classEntries: ClassIncomeEntry[];
-  extraEntries: ExtraExpenseEntry[];
-  branchFilter?: Branch; // If provided, show only this branch
+  extraEntries: any[];
+  branchFilter?: Branch;
 }
+
+// Distinct colors for procedure classes (used when viewing a single branch)
+const CLASS_COLORS = [
+  "#16324F",
+  "#1FA2A6",
+  "#E8A33D",
+  "#E15554",
+  "#2E9E5B",
+  "#8B5CF6",
+  "#EC4899",
+  "#F59E0B",
+  "#6366F1",
+  "#14B8A6",
+  "#F97316",
+  "#84CC16",
+  "#06B6D4",
+];
 
 function getWeekNumber(dateStr: string): string {
   const date = new Date(dateStr);
@@ -37,193 +51,146 @@ function getWeekNumber(dateStr: string): string {
   return `${date.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 }
 
-function groupByPeriod(entries: { date: string; amount?: number; expense?: number; procedures?: number; customers?: number }[], period: Period): TrendDataPoint[] {
-  const groups = new Map<string, { income: number; expense: number; procedures: number; customers: number }>();
-
-  for (const entry of entries) {
-    let label = "";
-    switch (period) {
-      case "daily":
-        label = entry.date;
-        break;
-      case "weekly":
-        label = getWeekNumber(entry.date);
-        break;
-      case "monthly":
-        label = entry.date.substring(0, 7); // YYYY-MM
-        break;
-      case "yearly":
-        label = entry.date.substring(0, 4); // YYYY
-        break;
-    }
-
-    if (!groups.has(label)) {
-      groups.set(label, { income: 0, expense: 0, procedures: 0, customers: 0 });
-    }
-
-    const current = groups.get(label)!;
-    if (entry.amount !== undefined) {
-      current.income += entry.amount;
-    }
-    if (entry.expense !== undefined) {
-      current.expense += entry.expense;
-    }
-    if (entry.procedures !== undefined) {
-      current.procedures += entry.procedures;
-    }
-    if (entry.customers !== undefined) {
-      current.customers += entry.customers;
-    }
+function getPeriodLabel(date: string, period: Period): string {
+  switch (period) {
+    case "daily":
+      return date;
+    case "weekly":
+      return getWeekNumber(date);
+    case "monthly":
+      return date.substring(0, 7);
+    case "yearly":
+      return date.substring(0, 4);
   }
-
-  // Sort by label
-  const sorted = Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  return sorted.map(([label, data]) => ({ label, ...data }));
 }
 
 export default function BranchTrendGraph({
   period,
-  incomeEntries,
   classEntries,
-  extraEntries,
   branchFilter,
 }: BranchTrendGraphProps) {
-  // Filter by branch if specified
-  const filteredIncome = useMemo(
-    () => (branchFilter ? incomeEntries.filter((e) => e.branch === branchFilter) : incomeEntries),
-    [incomeEntries, branchFilter]
-  );
-  const filteredClass = useMemo(
-    () => (branchFilter ? classEntries.filter((e) => e.branch === branchFilter) : classEntries),
-    [classEntries, branchFilter]
-  );
-  const filteredExtra = useMemo(
-    () => (branchFilter ? extraEntries.filter((e) => e.branch === branchFilter) : extraEntries),
-    [extraEntries, branchFilter]
-  );
+  const periodLabelText =
+    period === "daily"
+      ? "Day"
+      : period === "weekly"
+        ? "Week"
+        : period === "monthly"
+          ? "Month"
+          : "Year";
 
-  // Group income by period
-  const incomeTrend = useMemo(
-    () => groupByPeriod(filteredIncome.map((e) => ({ date: e.date, amount: e.amount })), period),
-    [filteredIncome, period]
-  );
+  // Pre-compute class-wise breakdown per period per branch (for tooltips)
+  const classBreakdown = useMemo(() => {
+    const breakdown = new Map<string, Map<Branch, Map<string, number>>>();
 
-  // Group class income by period
-  const classTrend = useMemo(
-    () =>
-      groupByPeriod(
-        filteredClass.map((e) => ({ date: e.date, amount: e.income, procedures: e.procedures, customers: e.customers })),
-        period
-      ),
-    [filteredClass, period]
-  );
-
-  // Group extra expenses by period
-  const extraTrend = useMemo(
-    () => groupByPeriod(filteredExtra.map((e) => ({ date: e.date, amount: e.amount })), period),
-    [filteredExtra, period]
-  );
-
-  // Merge and aggregate all data by label
-  const mergedData = useMemo(() => {
-    const map = new Map<string, TrendDataPoint>();
-
-    for (const point of incomeTrend) {
-      if (!map.has(point.label)) {
-        map.set(point.label, { label: point.label, income: 0, expense: 0, procedures: 0, customers: 0 });
+    for (const entry of classEntries) {
+      const label = getPeriodLabel(entry.date, period);
+      if (!breakdown.has(label)) {
+        breakdown.set(label, new Map());
       }
-      map.get(point.label)!.income += point.income;
+      const branchMap = breakdown.get(label)!;
+      if (!branchMap.has(entry.branch)) {
+        branchMap.set(entry.branch, new Map());
+      }
+      const classMap = branchMap.get(entry.branch)!;
+      classMap.set(entry.procClass, (classMap.get(entry.procClass) || 0) + entry.procedures);
     }
 
-    for (const point of classTrend) {
-      if (!map.has(point.label)) {
-        map.set(point.label, { label: point.label, income: 0, expense: 0, procedures: 0, customers: 0 });
+    return breakdown;
+  }, [classEntries, period]);
+
+  // Build chart data
+  const { labels, datasets } = useMemo(() => {
+    if (branchFilter) {
+      // ─── BRANCH-SPECIFIC VIEW: Show class-wise procedure bars ───
+      const filtered = classEntries.filter((e) => e.branch === branchFilter);
+
+      // Aggregate procedures by period AND class
+      const periodClassMap = new Map<string, Map<string, number>>();
+
+      for (const entry of filtered) {
+        const label = getPeriodLabel(entry.date, period);
+        if (!periodClassMap.has(label)) {
+          periodClassMap.set(label, new Map());
+        }
+        const classMap = periodClassMap.get(label)!;
+        classMap.set(
+          entry.procClass,
+          (classMap.get(entry.procClass) || 0) + entry.procedures
+        );
       }
-      const current = map.get(point.label)!;
-      current.income += point.income;
-      current.procedures += point.procedures;
-      current.customers += point.customers;
-    }
 
-    for (const point of extraTrend) {
-      if (!map.has(point.label)) {
-        map.set(point.label, { label: point.label, income: 0, expense: 0, procedures: 0, customers: 0 });
+      const sortedLabels = Array.from(periodClassMap.keys()).sort((a, b) =>
+        a.localeCompare(b)
+      );
+
+      // Collect all unique classes in the data, ordered by CLASSES list
+      const activeClasses = new Set<string>();
+      for (const classMap of periodClassMap.values()) {
+        for (const cls of classMap.keys()) {
+          activeClasses.add(cls);
+        }
       }
-      map.get(point.label)!.expense += point.expense;
+      const sortedClasses = CLASSES.filter((c) => activeClasses.has(c));
+
+      if (sortedLabels.length === 0) return { labels: [], datasets: [] };
+
+      const ds = sortedClasses.map((cls, idx) => ({
+        label: cls,
+        data: sortedLabels.map((lbl) => periodClassMap.get(lbl)?.get(cls) || 0),
+        backgroundColor: CLASS_COLORS[idx % CLASS_COLORS.length],
+        borderRadius: 4,
+        barPercentage: 0.85,
+        categoryPercentage: 0.75,
+      }));
+
+      return { labels: sortedLabels, datasets: ds };
+    } else {
+      // ─── GLOBAL VIEW: Show branch-wise procedure bars ───
+      // Aggregate procedures by period AND branch
+      const periodBranchMap = new Map<string, Map<Branch, number>>();
+
+      for (const entry of classEntries) {
+        const label = getPeriodLabel(entry.date, period);
+        if (!periodBranchMap.has(label)) {
+          periodBranchMap.set(label, new Map());
+        }
+        const branchMap = periodBranchMap.get(label)!;
+        branchMap.set(
+          entry.branch,
+          (branchMap.get(entry.branch) || 0) + entry.procedures
+        );
+      }
+
+      const sortedLabels = Array.from(periodBranchMap.keys()).sort((a, b) =>
+        a.localeCompare(b)
+      );
+
+      if (sortedLabels.length === 0) return { labels: [], datasets: [] };
+
+      const activeBranches = BRANCHES.filter((b) =>
+        classEntries.some((e) => e.branch === b)
+      );
+
+      const ds = activeBranches.map((branch) => ({
+        label: branch,
+        data: sortedLabels.map(
+          (lbl) => periodBranchMap.get(lbl)?.get(branch) || 0
+        ),
+        backgroundColor: BRANCH_COLORS[branch],
+        borderRadius: 4,
+        barPercentage: 0.85,
+        categoryPercentage: 0.75,
+      }));
+
+      return { labels: sortedLabels, datasets: ds };
     }
+  }, [period, classEntries, branchFilter]);
 
-    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [incomeTrend, classTrend, extraTrend]);
-
-  if (mergedData.length === 0) {
+  if (labels.length === 0) {
     return null;
   }
 
-  const labels = mergedData.map((d) => d.label);
-  const incomeData = mergedData.map((d) => d.income);
-  const expenseData = mergedData.map((d) => d.expense);
-  const profitData = mergedData.map((d) => d.income - d.expense);
-  const proceduresData = mergedData.map((d) => d.procedures);
-
-  // Determine colors based on branch filter
-  const incomeColor = branchFilter ? BRANCH_COLORS[branchFilter] : "#16324F";
-  const expenseColor = "#E15554";
-  const profitColor = "#1FA2A6";
-
-  const periodLabel =
-    period === "daily" ? "Day" : period === "weekly" ? "Week" : period === "monthly" ? "Month" : "Year";
-
-  // Build datasets separately to avoid complex union types
-  const chartData: any = {
-    labels,
-    datasets: [
-      {
-        label: "Income",
-        data: incomeData,
-        borderColor: incomeColor,
-        backgroundColor: incomeColor + "20",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-      },
-      {
-        label: "Expenses",
-        data: expenseData,
-        borderColor: expenseColor,
-        backgroundColor: expenseColor + "20",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-      },
-      {
-        label: "Net Profit/Loss",
-        data: profitData,
-        borderColor: profitColor,
-        backgroundColor: profitData.map((v: number) => (v >= 0 ? "#2E9E5B" : "#E15554")),
-        borderDash: [5, 5],
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-      },
-      ...(branchFilter
-        ? []
-        : [
-            {
-              label: "Procedures",
-              data: proceduresData,
-              borderColor: "#E8A33D",
-              backgroundColor: "#E8A33D20",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 2,
-              pointHoverRadius: 5,
-              yAxisID: "y1" as const,
-            },
-          ]),
-    ],
-  };
+  const chartData: any = { labels, datasets };
 
   const options: any = {
     responsive: true,
@@ -238,42 +205,85 @@ export default function BranchTrendGraph({
         labels: {
           usePointStyle: true,
           boxWidth: 8,
-          padding: 16,
-          font: { size: 11 },
+          padding: 12,
+          font: { size: 10 },
         },
       },
       tooltip: {
         callbacks: {
+          title: (items: any[]) => {
+            if (items.length > 0) {
+              return `${items[0].label} (${periodLabelText})`;
+            }
+            return "";
+          },
           label: (ctx: any) => {
             const label = ctx.dataset.label || "";
             const val = ctx.parsed.y;
-            if (label === "Procedures") return `${label}: ${val}`;
-            return `${label}: $${val.toLocaleString()}`;
+            return `${label}: ${val} procedures`;
+          },
+          afterBody: (items: any[]) => {
+            // Only show class breakdown in global view (when no branchFilter)
+            if (branchFilter) return;
+
+            const periodLabel = items[0]?.label;
+            if (!periodLabel) return;
+
+            const branch = items[0]?.dataset?.label as Branch;
+            if (!branch) return;
+
+            const branchData = classBreakdown.get(periodLabel)?.get(branch);
+            if (!branchData || branchData.size === 0) return;
+
+            const lines: string[] = ["─── Class Breakdown ───"];
+            for (const [cls, count] of branchData.entries()) {
+              if (count > 0) {
+                lines.push(`  ${cls}: ${count}`);
+              }
+            }
+            return lines;
+          },
+          footer: (items: any[]) => {
+            if (branchFilter) return;
+
+            const periodLabel = items[0]?.label;
+            if (!periodLabel) return;
+
+            // Show total procedures for this period across all branches
+            let total = 0;
+            for (const entry of classEntries) {
+              if (getPeriodLabel(entry.date, period) === periodLabel) {
+                total += entry.procedures;
+              }
+            }
+            return total > 0 ? `Total: ${total} procedures` : "";
           },
         },
       },
     },
     scales: {
+      x: {
+        stacked: false,
+        grid: { display: false },
+        ticks: {
+          font: { size: 10 },
+          maxRotation: 45,
+          minRotation: 0,
+        },
+      },
       y: {
         beginAtZero: true,
+        title: {
+          display: true,
+          text: "Procedures",
+          font: { size: 11 },
+        },
         ticks: {
-          callback: (val: number) => "$" + val.toLocaleString(),
           font: { size: 10 },
+          precision: 0,
         },
         grid: { color: "#f0f0f0" },
       },
-      ...(branchFilter
-        ? {}
-        : {
-            y1: {
-              beginAtZero: true,
-              position: "right" as const,
-              grid: { display: false },
-              ticks: {
-                font: { size: 10 },
-              },
-            },
-          }),
     },
   };
 
@@ -281,15 +291,22 @@ export default function BranchTrendGraph({
     <div className="bg-white rounded-xl border border-gray-200 p-4 mt-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-gray-800">
-          {branchFilter ? `${branchFilter} - ` : ""}Trend Graph ({periodLabel})
+          {branchFilter
+            ? `${branchFilter} - Class-wise Procedures`
+            : "Branch Procedure Comparison"}
         </h2>
         <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded">
-          Grouped by {periodLabel}
+          Grouped by {periodLabelText}
         </span>
       </div>
       <div className="h-72">
-        <Line data={chartData} options={options} />
+        <Bar data={chartData} options={options} />
       </div>
+      <p className="text-[11px] text-gray-400 mt-2 text-center">
+        {branchFilter
+          ? `Showing procedure count by class per ${periodLabelText.toLowerCase()}`
+          : `Shows which branch performed the most procedures per ${periodLabelText.toLowerCase()}. Hover for class-wise breakdown.`}
+      </p>
     </div>
   );
 }
