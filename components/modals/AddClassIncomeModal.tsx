@@ -31,6 +31,8 @@ export default function AddClassIncomeModal({ isOpen, onClose, onSave }: AddClas
       procedures: Number(procedures),
       customers: Number(customers),
       income: Number(income),
+      returnedCustomers: 0,
+      returnedAmount: 0,
     });
 
     setBranch(BRANCHES[0]);

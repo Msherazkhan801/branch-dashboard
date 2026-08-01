@@ -8,6 +8,7 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { IncomeEntry, ClassIncomeEntry, ExtraExpenseEntry, HeadOfficeExpenseEntry } from "@/types";
@@ -66,6 +67,8 @@ export async function fetchClassIncomeEntries(): Promise<ClassIncomeEntry[]> {
     procedures: d.data().procedures,
     customers: d.data().customers,
     income: d.data().income,
+    returnedCustomers: d.data().returnedCustomers ?? 0,
+    returnedAmount: d.data().returnedAmount ?? 0,
   })) as ClassIncomeEntry[];
 }
 
@@ -77,12 +80,25 @@ export async function addClassIncomeEntry(entry: Omit<ClassIncomeEntry, "id">): 
     procedures: entry.procedures,
     customers: entry.customers,
     income: entry.income,
+    returnedCustomers: entry.returnedCustomers ?? 0,
+    returnedAmount: entry.returnedAmount ?? 0,
   });
-  return { ...entry, id: docRef.id };
+  return { ...entry, id: docRef.id, returnedCustomers: entry.returnedCustomers ?? 0, returnedAmount: entry.returnedAmount ?? 0 };
 }
 
 export async function deleteClassIncomeEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, CLASS_INCOME_COLLECTION, id));
+}
+
+export async function updateClassIncomeEntry(id: string, data: Partial<ClassIncomeEntry>): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (data.returnedCustomers !== undefined) updateData.returnedCustomers = data.returnedCustomers;
+  if (data.returnedAmount !== undefined) updateData.returnedAmount = data.returnedAmount;
+  if (data.procedures !== undefined) updateData.procedures = data.procedures;
+  if (data.customers !== undefined) updateData.customers = data.customers;
+  if (data.income !== undefined) updateData.income = data.income;
+  if (data.procClass !== undefined) updateData.procClass = data.procClass;
+  await updateDoc(doc(db, CLASS_INCOME_COLLECTION, id), updateData);
 }
 
 // ===================== EXTRA EXPENSE =====================

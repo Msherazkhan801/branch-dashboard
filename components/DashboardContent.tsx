@@ -19,6 +19,7 @@ import {
   fetchClassIncomeEntries,
   addClassIncomeEntry,
   deleteClassIncomeEntry,
+  updateClassIncomeEntry,
   fetchExtraExpenseEntries,
   addExtraExpenseEntry,
   deleteExtraExpenseEntry,
@@ -152,6 +153,35 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     }
   }, []);
 
+  const handleReturnClassEntry = useCallback(async (id: string, returnedCustomers: number, returnedAmount: number) => {
+    try {
+      // Find the entry and validate limits before updating
+      const target = classEntries.find((e) => e.id === id);
+      if (target) {
+        const remainingCustomers = target.customers - (target.returnedCustomers || 0);
+        const remainingIncome = target.income - (target.returnedAmount || 0);
+        if (returnedCustomers > remainingCustomers || returnedAmount > remainingIncome) {
+          console.warn("Return exceeds remaining limits. Ignoring update.");
+          return;
+        }
+      }
+      await updateClassIncomeEntry(id, { returnedCustomers, returnedAmount });
+      setClassEntries((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                returnedCustomers: (e.returnedCustomers || 0) + returnedCustomers,
+                returnedAmount: (e.returnedAmount || 0) + returnedAmount,
+              }
+            : e
+        )
+      );
+    } catch (err) {
+      console.error("Error updating class income return:", err);
+    }
+  }, [classEntries]);
+
   const handleDeleteExtraEntry = useCallback(async (id: string) => {
     try {
       await deleteExtraExpenseEntry(id);
@@ -241,7 +271,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         .reduce((s, e) => s + e.amount, 0);
       const clsInc = filteredClass
         .filter((e) => e.branch === b)
-        .reduce((s, e) => s + e.income, 0);
+        .reduce((s, e) => s + (e.income - (e.returnedAmount || 0)), 0);
       const extExp = filteredExtra
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.amount, 0);
@@ -402,6 +432,9 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
                       Procedures: e.procedures,
                       Customers: e.customers,
                       Income: e.income,
+                      "Returned Customers": e.returnedCustomers || 0,
+                      "Returned Amount": e.returnedAmount || 0,
+                      "Net Income": e.income - (e.returnedAmount || 0),
                     })),
                     "class-income"
                   )
@@ -412,7 +445,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             )}
           </div>
-          <ClasswiseTable entries={filteredClass} onDelete={handleDeleteClassEntry} />
+          <ClasswiseTable entries={filteredClass} onDelete={handleDeleteClassEntry} onReturn={handleReturnClassEntry} />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">

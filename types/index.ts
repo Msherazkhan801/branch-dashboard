@@ -17,6 +17,8 @@ export interface ClassIncomeEntry {
   procedures: number;
   customers: number;
   income: number;
+  returnedCustomers: number;
+  returnedAmount: number;
 }
 
 export interface ExtraExpenseEntry {
