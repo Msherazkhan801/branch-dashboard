@@ -417,7 +417,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
       {/* Branch Procedure Pie Chart - shows class distribution for a specific branch */}
       {branchFilter && <BranchProcedurePieChart branch={branchFilter} classEntries={filteredClass} />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mt-6">
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-gray-800">Class-wise Income</h2>

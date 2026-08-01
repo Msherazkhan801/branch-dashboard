@@ -111,14 +111,14 @@ export default function ClasswiseTable({ entries, onDelete, onReturn }: Classwis
                           <>
                             <button
                               onClick={() => handleReturnOne(entry)}
-                              className="text-xs font-medium text-yellow-200 hover:text-yellow-100 border border-yellow-200/60 rounded px-1.5 py-0.5 hover:bg-red-700"
+                              className="text-xs font-medium text-black hover:text-yellow-100 border border-yellow-200/60 rounded px-1.5 py-0.5 hover:bg-red-700"
                             >
                               Return 1
                             </button>
                             <button
                               onClick={() => handleReturnClick(entry)}
-                              className={`text-xs font-medium ${
-                                hasReturns ? "text-yellow-200 hover:text-yellow-100" : "text-orange-500 hover:text-orange-700"
+                              className={`text-xs font-medium border border-yellow rounded px-1.5 py-0.5 hover:bg-red-700  ${
+                                hasReturns ? "text-yellow-200 hover:text-yellow-100" : "text-black hover:text-yellow-100"
                               }`}
                             >
                               Return
