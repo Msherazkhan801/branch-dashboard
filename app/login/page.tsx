@@ -335,7 +335,7 @@ function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="input-glow w-full rounded-2xl bg-white/5 border border-white/15 pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/30 outline-none"
-                    placeholder="admin@gmail.com"
+                    placeholder="test@gmail.com"
                   />
                 </div>
               </div>
@@ -354,7 +354,7 @@ function LoginForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input-glow w-full rounded-2xl bg-white/5 border border-white/15 pl-11 pr-12 py-3.5 text-sm text-white placeholder-white/30 outline-none"
-                    placeholder="admin123"
+                    placeholder="test123"
                   />
                   <button
                     type="button"
