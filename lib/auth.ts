@@ -69,7 +69,7 @@ export const PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
   "data-entry": {
     view: true,
     create: true,
-    edit: false,
+    edit: true,
     delete: false,
   },
 };
