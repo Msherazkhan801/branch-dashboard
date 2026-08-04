@@ -1,19 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Branch, IncomeEntry } from "@/types";
 import { BRANCHES } from "@/lib/constants";
 
 interface AddIncomeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: Omit<IncomeEntry, "id">) => void;
+  onSave: (entry: Omit<IncomeEntry, "id">, id?: string) => void;
+  initialEntry?: IncomeEntry | null;
 }
 
-export default function AddIncomeModal({ isOpen, onClose, onSave }: AddIncomeModalProps) {
-  const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [amount, setAmount] = useState("");
+export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry = null }: AddIncomeModalProps) {
+  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? BRANCHES[0]);
+  const [date, setDate] = useState(initialEntry?.date ?? new Date().toISOString().split("T")[0]);
+  const [amount, setAmount] = useState(initialEntry ? String(initialEntry.amount) : "");
+
+  useEffect(() => {
+    if (initialEntry) {
+      setBranch(initialEntry.branch);
+      setDate(initialEntry.date);
+      setAmount(String(initialEntry.amount));
+    } else {
+      setBranch(BRANCHES[0]);
+      setDate(new Date().toISOString().split("T")[0]);
+      setAmount("");
+    }
+  }, [initialEntry, isOpen]);
 
   if (!isOpen) return null;
 
@@ -21,11 +34,14 @@ export default function AddIncomeModal({ isOpen, onClose, onSave }: AddIncomeMod
     e.preventDefault();
     if (!amount || isNaN(Number(amount))) return;
 
-    onSave({
-      branch,
-      date,
-      amount: Number(amount),
-    });
+    onSave(
+      {
+        branch,
+        date,
+        amount: Number(amount),
+      },
+      initialEntry?.id
+    );
 
     setBranch(BRANCHES[0]);
     setDate(new Date().toISOString().split("T")[0]);
@@ -37,7 +53,7 @@ export default function AddIncomeModal({ isOpen, onClose, onSave }: AddIncomeMod
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Add Income</h2>
+          <h2 className="text-lg font-semibold text-gray-800">{initialEntry ? "Edit Income" : "Add Income"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
             &times;
           </button>

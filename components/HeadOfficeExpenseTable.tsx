@@ -1,13 +1,15 @@
 "use client";
 
 import { HeadOfficeExpenseEntry } from "@/types";
+import Authorized from "@/components/Authorized";
 
 interface HeadOfficeExpenseTableProps {
   entries: HeadOfficeExpenseEntry[];
   onDelete: (id: string) => void;
+  onEdit: (entry: HeadOfficeExpenseEntry) => void;
 }
 
-export default function HeadOfficeExpenseTable({ entries, onDelete }: HeadOfficeExpenseTableProps) {
+export default function HeadOfficeExpenseTable({ entries, onDelete, onEdit }: HeadOfficeExpenseTableProps) {
   if (entries.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -44,12 +46,24 @@ export default function HeadOfficeExpenseTable({ entries, onDelete }: HeadOffice
                 <td className="p-3">{entry.category}</td>
                 <td className="p-3 font-medium text-red-600">${entry.amount.toLocaleString()}</td>
                 <td className="p-3">
-                  <button
-                    onClick={() => onDelete(entry.id)}
-                    className="text-red-500 hover:text-red-700 text-xs font-medium"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <Authorized permission="edit" fallback={null}>
+                      <button
+                        onClick={() => onEdit(entry)}
+                        className="text-blue-500 hover:text-blue-700 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
+                    </Authorized>
+                    <Authorized permission="delete" fallback={null}>
+                      <button
+                        onClick={() => onDelete(entry.id)}
+                        className="text-red-500 hover:text-red-700 text-xs font-medium"
+                      >
+                        Delete
+                      </button>
+                    </Authorized>
+                  </div>
                 </td>
               </tr>
             ))}

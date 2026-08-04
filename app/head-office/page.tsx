@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { HeadOfficeExpenseEntry, Period } from "@/types";
 import { DEFAULT_CATEGORIES } from "@/lib/constants";
 import { exportToXLSX } from "@/lib/exportUtils";
@@ -8,6 +9,7 @@ import {
   fetchHeadOfficeExpenseEntries,
   addHeadOfficeExpenseEntry,
   deleteHeadOfficeExpenseEntry,
+  updateHeadOfficeExpenseEntry,
   fetchCategories,
   saveCategories,
 } from "@/lib/firestoreService";
@@ -16,10 +18,16 @@ import HeadOfficeExpenseGraph from "@/components/HeadOfficeExpenseGraph";
 import AddHeadOfficeExpenseModal from "@/components/modals/AddHeadOfficeExpenseModal";
 
 export default function HeadOfficePage() {
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("create");
+  const canEdit = hasPermission("edit");
+  const canDelete = hasPermission("delete");
+
   const [period, setPeriod] = useState<Period>("daily");
   const [entries, setEntries] = useState<HeadOfficeExpenseEntry[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [showModal, setShowModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<HeadOfficeExpenseEntry | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,22 +50,32 @@ export default function HeadOfficePage() {
     loadData();
   }, []);
 
-  const handleAdd = useCallback(
-    async (entry: Omit<HeadOfficeExpenseEntry, "id">) => {
+  const handleSave = useCallback(
+    async (entry: Omit<HeadOfficeExpenseEntry, "id">, id?: string) => {
       try {
-        const saved = await addHeadOfficeExpenseEntry(entry);
-        setEntries((prev) => [saved, ...prev]);
+        if (id) {
+          await updateHeadOfficeExpenseEntry(id, entry);
+          setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...entry } : e)));
+        } else {
+          const saved = await addHeadOfficeExpenseEntry(entry);
+          setEntries((prev) => [saved, ...prev]);
+        }
         if (!categories.includes(entry.category)) {
           const updated = [...categories, entry.category];
           setCategories(updated);
           await saveCategories(updated);
         }
       } catch (err) {
-        console.error("Error adding head office expense:", err);
+        console.error("Error saving head office expense:", err);
       }
     },
     [categories]
   );
+
+  const handleEdit = useCallback((entry: HeadOfficeExpenseEntry) => {
+    setEditingEntry(entry);
+    setShowModal(true);
+  }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
@@ -138,8 +156,16 @@ export default function HeadOfficePage() {
             )}
           </div>
           <button
-            onClick={() => setShowModal(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            onClick={() => {
+              setEditingEntry(null);
+              setShowModal(true);
+            }}
+            disabled={!canCreate}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              canCreate
+                ? "bg-orange-600 text-white hover:bg-orange-700"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
           >
             + Head Office Expense
           </button>
@@ -167,7 +193,11 @@ export default function HeadOfficePage() {
             </button>
           )}
         </div>
-        <HeadOfficeExpenseTable entries={filteredEntries} onDelete={handleDelete} />
+        <HeadOfficeExpenseTable
+          entries={filteredEntries}
+          onDelete={canDelete ? handleDelete : () => {} }
+          onEdit={canEdit ? handleEdit : () => {} }
+        />
       </div>
 
       <div className="mb-6">
@@ -176,9 +206,13 @@ export default function HeadOfficePage() {
 
       <AddHeadOfficeExpenseModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSave={handleAdd}
+        onClose={() => {
+          setShowModal(false);
+          setEditingEntry(null);
+        }}
+        onSave={handleSave}
         categories={categories}
+        initialEntry={editingEntry}
       />
     </>
   );

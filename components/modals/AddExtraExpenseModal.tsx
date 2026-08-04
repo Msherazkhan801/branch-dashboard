@@ -1,23 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Branch, ExtraExpenseEntry } from "@/types";
 import { BRANCHES, DEFAULT_CATEGORIES } from "@/lib/constants";
 
 interface AddExtraExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: Omit<ExtraExpenseEntry, "id">) => void;
+  onSave: (entry: Omit<ExtraExpenseEntry, "id">, id?: string) => void;
   categories: string[];
+  initialEntry?: ExtraExpenseEntry | null;
 }
 
-export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categories }: AddExtraExpenseModalProps) {
-  const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [category, setCategory] = useState(categories[0] || DEFAULT_CATEGORIES[0]);
-  const [amount, setAmount] = useState("");
+export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categories, initialEntry = null }: AddExtraExpenseModalProps) {
+  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? BRANCHES[0]);
+  const [date, setDate] = useState(initialEntry?.date ?? new Date().toISOString().split("T")[0]);
+  const [category, setCategory] = useState((initialEntry?.category ?? categories[0]) || DEFAULT_CATEGORIES[0]);
+  const [amount, setAmount] = useState(String(initialEntry?.amount ?? ""));
   const [newCategory, setNewCategory] = useState("");
   const [useNewCategory, setUseNewCategory] = useState(false);
+
+  useEffect(() => {
+    if (initialEntry) {
+      setBranch(initialEntry.branch);
+      setDate(initialEntry.date);
+      setCategory(initialEntry.category);
+      setAmount(String(initialEntry.amount));
+      setUseNewCategory(false);
+      setNewCategory("");
+    } else {
+      setBranch(BRANCHES[0]);
+      setDate(new Date().toISOString().split("T")[0]);
+      setCategory(categories[0] || DEFAULT_CATEGORIES[0]);
+      setAmount("");
+      setNewCategory("");
+      setUseNewCategory(false);
+    }
+  }, [initialEntry, isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -27,12 +46,15 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categori
 
     const finalCategory = useNewCategory ? newCategory : category;
 
-    onSave({
-      branch,
-      date,
-      category: finalCategory,
-      amount: Number(amount),
-    });
+    onSave(
+      {
+        branch,
+        date,
+        category: finalCategory,
+        amount: Number(amount),
+      },
+      initialEntry?.id
+    );
 
     setBranch(BRANCHES[0]);
     setDate(new Date().toISOString().split("T")[0]);
@@ -47,7 +69,7 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categori
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Add Extra Expense</h2>
+          <h2 className="text-lg font-semibold text-gray-800">{initialEntry ? "Edit Extra Expense" : "Add Extra Expense"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
             &times;
           </button>

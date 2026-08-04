@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-
-const inter = Inter({
-  subsets: ["latin"],
-});
+import AuthProvider from "@/components/AuthProvider";
+import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "Branch Performance Dashboard",
@@ -18,14 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.className} h-full antialiased`}>
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full bg-slate-50 text-slate-800">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 lg:ml-16 transition-all duration-300 p-4 md:p-6 overflow-x-hidden">
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

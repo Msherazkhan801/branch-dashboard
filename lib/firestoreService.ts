@@ -54,6 +54,14 @@ export async function deleteIncomeEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, INCOME_COLLECTION, id));
 }
 
+export async function updateIncomeEntry(id: string, data: Partial<IncomeEntry>): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (data.branch !== undefined) updateData.branch = data.branch;
+  if (data.date !== undefined) updateData.date = Timestamp.fromDate(new Date(data.date));
+  if (data.amount !== undefined) updateData.amount = data.amount;
+  await updateDoc(doc(db, INCOME_COLLECTION, id), updateData);
+}
+
 // ===================== CLASS INCOME =====================
 
 export async function fetchClassIncomeEntries(): Promise<ClassIncomeEntry[]> {
@@ -92,12 +100,14 @@ export async function deleteClassIncomeEntry(id: string): Promise<void> {
 
 export async function updateClassIncomeEntry(id: string, data: Partial<ClassIncomeEntry>): Promise<void> {
   const updateData: Record<string, unknown> = {};
-  if (data.returnedCustomers !== undefined) updateData.returnedCustomers = data.returnedCustomers;
-  if (data.returnedAmount !== undefined) updateData.returnedAmount = data.returnedAmount;
+  if (data.branch !== undefined) updateData.branch = data.branch;
+  if (data.date !== undefined) updateData.date = Timestamp.fromDate(new Date(data.date));
+  if (data.procClass !== undefined) updateData.procClass = data.procClass;
   if (data.procedures !== undefined) updateData.procedures = data.procedures;
   if (data.customers !== undefined) updateData.customers = data.customers;
   if (data.income !== undefined) updateData.income = data.income;
-  if (data.procClass !== undefined) updateData.procClass = data.procClass;
+  if (data.returnedCustomers !== undefined) updateData.returnedCustomers = data.returnedCustomers;
+  if (data.returnedAmount !== undefined) updateData.returnedAmount = data.returnedAmount;
   await updateDoc(doc(db, CLASS_INCOME_COLLECTION, id), updateData);
 }
 
@@ -129,6 +139,15 @@ export async function deleteExtraExpenseEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, EXTRA_EXPENSE_COLLECTION, id));
 }
 
+export async function updateExtraExpenseEntry(id: string, data: Partial<ExtraExpenseEntry>): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (data.branch !== undefined) updateData.branch = data.branch;
+  if (data.date !== undefined) updateData.date = Timestamp.fromDate(new Date(data.date));
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.amount !== undefined) updateData.amount = data.amount;
+  await updateDoc(doc(db, EXTRA_EXPENSE_COLLECTION, id), updateData);
+}
+
 // ===================== HEAD OFFICE EXPENSE =====================
 
 export async function fetchHeadOfficeExpenseEntries(): Promise<HeadOfficeExpenseEntry[]> {
@@ -149,6 +168,14 @@ export async function addHeadOfficeExpenseEntry(entry: Omit<HeadOfficeExpenseEnt
     amount: entry.amount,
   });
   return { ...entry, id: docRef.id };
+}
+
+export async function updateHeadOfficeExpenseEntry(id: string, data: Partial<HeadOfficeExpenseEntry>): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (data.date !== undefined) updateData.date = Timestamp.fromDate(new Date(data.date));
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.amount !== undefined) updateData.amount = data.amount;
+  await updateDoc(doc(db, HEAD_OFFICE_EXPENSE_COLLECTION, id), updateData);
 }
 
 export async function deleteHeadOfficeExpenseEntry(id: string): Promise<void> {

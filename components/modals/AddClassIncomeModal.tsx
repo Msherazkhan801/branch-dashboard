@@ -1,22 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Branch, ClassIncomeEntry } from "@/types";
 import { BRANCHES, CLASSES } from "@/lib/constants";
 
 interface AddClassIncomeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (entry: Omit<ClassIncomeEntry, "id">) => void;
+  onSave: (entry: Omit<ClassIncomeEntry, "id">, id?: string) => void;
+  initialEntry?: ClassIncomeEntry | null;
 }
 
-export default function AddClassIncomeModal({ isOpen, onClose, onSave }: AddClassIncomeModalProps) {
-  const [branch, setBranch] = useState<Branch>(BRANCHES[0]);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [procClass, setProcClass] = useState(CLASSES[0]);
-  const [procedures, setProcedures] = useState("");
-  const [customers, setCustomers] = useState("");
-  const [income, setIncome] = useState("");
+export default function AddClassIncomeModal({ isOpen, onClose, onSave, initialEntry = null }: AddClassIncomeModalProps) {
+  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? BRANCHES[0]);
+  const [date, setDate] = useState(initialEntry?.date ?? new Date().toISOString().split("T")[0]);
+  const [procClass, setProcClass] = useState(initialEntry?.procClass ?? CLASSES[0]);
+  const [procedures, setProcedures] = useState(String(initialEntry?.procedures ?? ""));
+  const [customers, setCustomers] = useState(String(initialEntry?.customers ?? ""));
+  const [income, setIncome] = useState(String(initialEntry?.income ?? ""));
+
+  useEffect(() => {
+    if (initialEntry) {
+      setBranch(initialEntry.branch);
+      setDate(initialEntry.date);
+      setProcClass(initialEntry.procClass);
+      setProcedures(String(initialEntry.procedures));
+      setCustomers(String(initialEntry.customers));
+      setIncome(String(initialEntry.income));
+    } else {
+      setBranch(BRANCHES[0]);
+      setDate(new Date().toISOString().split("T")[0]);
+      setProcClass(CLASSES[0]);
+      setProcedures("");
+      setCustomers("");
+      setIncome("");
+    }
+  }, [initialEntry, isOpen]);
 
   if (!isOpen) return null;
 
@@ -24,16 +43,19 @@ export default function AddClassIncomeModal({ isOpen, onClose, onSave }: AddClas
     e.preventDefault();
     if (!procedures || !customers || !income) return;
 
-    onSave({
-      branch,
-      date,
-      procClass,
-      procedures: Number(procedures),
-      customers: Number(customers),
-      income: Number(income),
-      returnedCustomers: 0,
-      returnedAmount: 0,
-    });
+    onSave(
+      {
+        branch,
+        date,
+        procClass,
+        procedures: Number(procedures),
+        customers: Number(customers),
+        income: Number(income),
+        returnedCustomers: initialEntry?.returnedCustomers ?? 0,
+        returnedAmount: initialEntry?.returnedAmount ?? 0,
+      },
+      initialEntry?.id
+    );
 
     setBranch(BRANCHES[0]);
     setDate(new Date().toISOString().split("T")[0]);
@@ -48,7 +70,7 @@ export default function AddClassIncomeModal({ isOpen, onClose, onSave }: AddClas
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Add Class Income</h2>
+          <h2 className="text-lg font-semibold text-gray-800">{initialEntry ? "Edit Class Income" : "Add Class Income"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
             &times;
           </button>

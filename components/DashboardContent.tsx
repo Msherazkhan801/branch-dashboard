@@ -10,12 +10,14 @@ import {
   Branch,
   BranchStatsMap,
 } from "@/types";
+import { useAuth } from "@/components/AuthProvider";
 import { BRANCHES, DEFAULT_CATEGORIES } from "@/lib/constants";
 import { exportToXLSX } from "@/lib/exportUtils";
 import {
   fetchIncomeEntries,
   addIncomeEntry,
   deleteIncomeEntry,
+  updateIncomeEntry,
   fetchClassIncomeEntries,
   addClassIncomeEntry,
   deleteClassIncomeEntry,
@@ -23,9 +25,11 @@ import {
   fetchExtraExpenseEntries,
   addExtraExpenseEntry,
   deleteExtraExpenseEntry,
+  updateExtraExpenseEntry,
   fetchHeadOfficeExpenseEntries,
   addHeadOfficeExpenseEntry,
   deleteHeadOfficeExpenseEntry,
+  updateHeadOfficeExpenseEntry,
   fetchCategories,
   saveCategories,
 } from "@/lib/firestoreService";
@@ -40,6 +44,7 @@ import AlertsList from "@/components/AlertsList";
 import BranchTrendGraph from "@/components/BranchTrendGraph";
 import ClassProcedureComparison from "@/components/ClassProcedureComparison";
 import BranchProcedurePieChart from "@/components/BranchProcedurePieChart";
+import Authorized from "@/components/Authorized";
 import AddIncomeModal from "@/components/modals/AddIncomeModal";
 import AddClassIncomeModal from "@/components/modals/AddClassIncomeModal";
 import AddExtraExpenseModal from "@/components/modals/AddExtraExpenseModal";
@@ -62,6 +67,15 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
   const [showClassModal, setShowClassModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [showHeadOfficeModal, setShowHeadOfficeModal] = useState(false);
+  const [editingIncomeEntry, setEditingIncomeEntry] = useState<IncomeEntry | null>(null);
+  const [editingClassEntry, setEditingClassEntry] = useState<ClassIncomeEntry | null>(null);
+  const [editingExtraEntry, setEditingExtraEntry] = useState<ExtraExpenseEntry | null>(null);
+  const [editingHeadOfficeEntry, setEditingHeadOfficeEntry] = useState<HeadOfficeExpenseEntry | null>(null);
+
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission("create");
+  const canEdit = hasPermission("edit");
+  const canDelete = hasPermission("delete");
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -92,53 +106,75 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     loadData();
   }, []);
 
-  const handleAddIncome = useCallback(async (entry: Omit<IncomeEntry, "id">) => {
+  const handleSaveIncome = useCallback(async (entry: Omit<IncomeEntry, "id">, id?: string) => {
     try {
-      const saved = await addIncomeEntry(entry);
-      setIncomeEntries((prev) => [saved, ...prev]);
+      if (id) {
+        await updateIncomeEntry(id, entry);
+        setIncomeEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...entry } : e)));
+      } else {
+        const saved = await addIncomeEntry(entry);
+        setIncomeEntries((prev) => [saved, ...prev]);
+      }
     } catch (err) {
-      console.error("Error adding income:", err);
+      console.error("Error saving income entry:", err);
     }
   }, []);
 
-  const handleAddClassIncome = useCallback(async (entry: Omit<ClassIncomeEntry, "id">) => {
+  const handleSaveClassIncome = useCallback(async (entry: Omit<ClassIncomeEntry, "id">, id?: string) => {
     try {
-      const saved = await addClassIncomeEntry(entry);
-      setClassEntries((prev) => [saved, ...prev]);
+      if (id) {
+        await updateClassIncomeEntry(id, entry);
+        setClassEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...entry } : e)));
+      } else {
+        const saved = await addClassIncomeEntry(entry);
+        setClassEntries((prev) => [saved, ...prev]);
+      }
     } catch (err) {
-      console.error("Error adding class income:", err);
+      console.error("Error saving class income:", err);
     }
   }, []);
 
-  const handleAddExtraExpense = useCallback(
-    async (entry: Omit<ExtraExpenseEntry, "id">) => {
+  const handleSaveExtraExpense = useCallback(
+    async (entry: Omit<ExtraExpenseEntry, "id">, id?: string) => {
       try {
-        const saved = await addExtraExpenseEntry(entry);
-        setExtraEntries((prev) => [saved, ...prev]);
+        if (id) {
+          await updateExtraExpenseEntry(id, entry);
+          setExtraEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...entry } : e)));
+        } else {
+          const saved = await addExtraExpenseEntry(entry);
+          setExtraEntries((prev) => [saved, ...prev]);
+        }
+
         if (!categories.includes(entry.category)) {
           const updated = [...categories, entry.category];
           setCategories(updated);
           await saveCategories(updated);
         }
       } catch (err) {
-        console.error("Error adding extra expense:", err);
+        console.error("Error saving extra expense:", err);
       }
     },
     [categories]
   );
 
-  const handleAddHeadOfficeExpense = useCallback(
-    async (entry: Omit<HeadOfficeExpenseEntry, "id">) => {
+  const handleSaveHeadOfficeExpense = useCallback(
+    async (entry: Omit<HeadOfficeExpenseEntry, "id">, id?: string) => {
       try {
-        const saved = await addHeadOfficeExpenseEntry(entry);
-        setHeadOfficeEntries((prev) => [saved, ...prev]);
+        if (id) {
+          await updateHeadOfficeExpenseEntry(id, entry);
+          setHeadOfficeEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...entry } : e)));
+        } else {
+          const saved = await addHeadOfficeExpenseEntry(entry);
+          setHeadOfficeEntries((prev) => [saved, ...prev]);
+        }
+
         if (!categories.includes(entry.category)) {
           const updated = [...categories, entry.category];
           setCategories(updated);
           await saveCategories(updated);
         }
       } catch (err) {
-        console.error("Error adding head office expense:", err);
+        console.error("Error saving head office expense:", err);
       }
     },
     [categories]
@@ -182,6 +218,30 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     }
   }, [classEntries]);
 
+  const handleEditIncomeEntry = useCallback((entry: IncomeEntry) => {
+    setEditingIncomeEntry(entry);
+    setShowIncomeModal(true);
+  }, []);
+
+  const handleDeleteIncome = useCallback(async (id: string) => {
+    try {
+      await deleteIncomeEntry(id);
+      setIncomeEntries((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Error deleting income:", err);
+    }
+  }, []);
+
+  const handleEditClassEntry = useCallback((entry: ClassIncomeEntry) => {
+    setEditingClassEntry(entry);
+    setShowClassModal(true);
+  }, []);
+
+  const handleEditExtraEntry = useCallback((entry: ExtraExpenseEntry) => {
+    setEditingExtraEntry(entry);
+    setShowExtraModal(true);
+  }, []);
+
   const handleDeleteExtraEntry = useCallback(async (id: string) => {
     try {
       await deleteExtraExpenseEntry(id);
@@ -191,21 +251,17 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
     }
   }, []);
 
+  const handleEditHeadOfficeEntry = useCallback((entry: HeadOfficeExpenseEntry) => {
+    setEditingHeadOfficeEntry(entry);
+    setShowHeadOfficeModal(true);
+  }, []);
+
   const handleDeleteHeadOfficeEntry = useCallback(async (id: string) => {
     try {
       await deleteHeadOfficeExpenseEntry(id);
       setHeadOfficeEntries((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       console.error("Error deleting head office expense:", err);
-    }
-  }, []);
-
-  const handleDeleteIncome = useCallback(async (id: string) => {
-    try {
-      await deleteIncomeEntry(id);
-      setIncomeEntries((prev) => prev.filter((e) => e.id !== id));
-    } catch (err) {
-      console.error("Error deleting income:", err);
     }
   }, []);
 
@@ -368,26 +424,58 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
             )}
           </div>
           <button
-            onClick={() => setShowIncomeModal(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            onClick={() => {
+              setEditingIncomeEntry(null);
+              setShowIncomeModal(true);
+            }}
+            disabled={!canCreate}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              canCreate
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
           >
             + Income
           </button>
           <button
-            onClick={() => setShowClassModal(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              setEditingClassEntry(null);
+              setShowClassModal(true);
+            }}
+            disabled={!canCreate}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              canCreate
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
           >
             + Class Income
           </button>
           <button
-            onClick={() => setShowExtraModal(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            onClick={() => {
+              setEditingExtraEntry(null);
+              setShowExtraModal(true);
+            }}
+            disabled={!canCreate}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              canCreate
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
           >
             + Extra Expense
           </button>
           <button
-            onClick={() => setShowHeadOfficeModal(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            onClick={() => {
+              setEditingHeadOfficeEntry(null);
+              setShowHeadOfficeModal(true);
+            }}
+            disabled={!canCreate}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              canCreate
+                ? "bg-orange-600 text-white hover:bg-orange-700"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
           >
             + Head Office Expense
           </button>
@@ -443,7 +531,12 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             )}
           </div>
-          <ClasswiseTable entries={filteredClass} onDelete={handleDeleteClassEntry} onReturn={handleReturnClassEntry} />
+          <ClasswiseTable
+            entries={filteredClass}
+            onDelete={handleDeleteClassEntry}
+            onReturn={handleReturnClassEntry}
+            onEdit={handleEditClassEntry}
+          />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -467,7 +560,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
               </button>
             )}
           </div>
-          <ExtraExpenseTable entries={filteredExtra} onDelete={handleDeleteExtraEntry} />
+          <ExtraExpenseTable entries={filteredExtra} onDelete={handleDeleteExtraEntry} onEdit={handleEditExtraEntry} />
         </div>
       </div>
 
@@ -510,9 +603,24 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
                     <td className="p-3">{entry.date}</td>
                     <td className="p-3 font-medium text-green-600">${entry.amount.toLocaleString()}</td>
                     <td className="p-3">
-                      <button onClick={() => handleDeleteIncome(entry.id)} className="text-red-500 hover:text-red-700 text-xs font-medium">
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <Authorized permission="edit" fallback={null}>
+                          <button
+                            onClick={() => handleEditIncomeEntry(entry)}
+                            className="text-blue-500 hover:text-blue-700 text-xs font-medium"
+                          >
+                            Edit
+                          </button>
+                        </Authorized>
+                        <Authorized permission="delete" fallback={null}>
+                          <button
+                            onClick={() => handleDeleteIncome(entry.id)}
+                            className="text-red-500 hover:text-red-700 text-xs font-medium"
+                          >
+                            Delete
+                          </button>
+                        </Authorized>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -552,7 +660,11 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
                   </button>
                 )}
               </div>
-              <HeadOfficeExpenseTable entries={filteredHeadOffice} onDelete={handleDeleteHeadOfficeEntry} />
+              <HeadOfficeExpenseTable
+                entries={filteredHeadOffice}
+                onDelete={handleDeleteHeadOfficeEntry}
+                onEdit={handleEditHeadOfficeEntry}
+              />
             </div>
             <div>
               <HeadOfficeExpenseGraph period={period} entries={filteredHeadOffice} />
@@ -563,25 +675,41 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
 
       <AddIncomeModal
         isOpen={showIncomeModal}
-        onClose={() => setShowIncomeModal(false)}
-        onSave={handleAddIncome}
+        onClose={() => {
+          setShowIncomeModal(false);
+          setEditingIncomeEntry(null);
+        }}
+        onSave={handleSaveIncome}
+        initialEntry={editingIncomeEntry}
       />
       <AddClassIncomeModal
         isOpen={showClassModal}
-        onClose={() => setShowClassModal(false)}
-        onSave={handleAddClassIncome}
+        onClose={() => {
+          setShowClassModal(false);
+          setEditingClassEntry(null);
+        }}
+        onSave={handleSaveClassIncome}
+        initialEntry={editingClassEntry}
       />
       <AddExtraExpenseModal
         isOpen={showExtraModal}
-        onClose={() => setShowExtraModal(false)}
-        onSave={handleAddExtraExpense}
+        onClose={() => {
+          setShowExtraModal(false);
+          setEditingExtraEntry(null);
+        }}
+        onSave={handleSaveExtraExpense}
         categories={categories}
+        initialEntry={editingExtraEntry}
       />
       <AddHeadOfficeExpenseModal
         isOpen={showHeadOfficeModal}
-        onClose={() => setShowHeadOfficeModal(false)}
-        onSave={handleAddHeadOfficeExpense}
+        onClose={() => {
+          setShowHeadOfficeModal(false);
+          setEditingHeadOfficeEntry(null);
+        }}
+        onSave={handleSaveHeadOfficeExpense}
         categories={categories}
+        initialEntry={editingHeadOfficeEntry}
       />
     </>
   );

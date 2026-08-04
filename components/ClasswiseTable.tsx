@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { ClassIncomeEntry } from "@/types";
+import Authorized from "@/components/Authorized";
 import ReturnClassIncomeModal from "@/components/modals/ReturnClassIncomeModal";
 
 interface ClasswiseTableProps {
   entries: ClassIncomeEntry[];
   onDelete: (id: string) => void;
   onReturn: (id: string, returnedCustomers: number, returnedAmount: number) => void;
+  onEdit: (entry: ClassIncomeEntry) => void;
 }
 
-export default function ClasswiseTable({ entries, onDelete, onReturn }: ClasswiseTableProps) {
+export default function ClasswiseTable({ entries, onDelete, onReturn, onEdit }: ClasswiseTableProps) {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<ClassIncomeEntry | null>(null);
 
@@ -108,31 +110,43 @@ export default function ClasswiseTable({ entries, onDelete, onReturn }: Classwis
                         {hasReturns && remainingCustomers <= 0 ? (
                           <span className="text-xs text-red-100 font-medium">Fully Returned</span>
                         ) : (
-                          <>
-                            <button
-                              onClick={() => handleReturnOne(entry)}
-                              className="text-xs font-medium text-black hover:text-yellow-100 border border-yellow-200/60 rounded px-1.5 py-0.5 hover:bg-red-700"
-                            >
-                              Return 1
-                            </button>
-                            <button
-                              onClick={() => handleReturnClick(entry)}
-                              className={`text-xs font-medium border border-yellow rounded px-1.5 py-0.5 hover:bg-red-700  ${
-                                hasReturns ? "text-yellow-200 hover:text-yellow-100" : "text-black hover:text-yellow-100"
-                              }`}
-                            >
-                              Return
-                            </button>
-                          </>
+                          <Authorized permission="edit" fallback={null}>
+                            <>
+                              <button
+                                onClick={() => handleReturnOne(entry)}
+                                className="text-xs font-medium text-black hover:text-yellow-100 border border-yellow-200/60 rounded px-1.5 py-0.5 hover:bg-red-700"
+                              >
+                                Return 1
+                              </button>
+                              <button
+                                onClick={() => handleReturnClick(entry)}
+                                className={`text-xs font-medium border border-yellow rounded px-1.5 py-0.5 hover:bg-red-700  ${
+                                  hasReturns ? "text-yellow-200 hover:text-yellow-100" : "text-black hover:text-yellow-100"
+                                }`}
+                              >
+                                Return
+                              </button>
+                            </>
+                          </Authorized>
                         )}
-                        <button
-                          onClick={() => onDelete(entry.id)}
-                          className={`text-xs font-medium ${
-                            hasReturns ? "text-red-100 hover:text-white" : "text-red-500 hover:text-red-700"
-                          }`}
-                        >
-                          Delete
-                        </button>
+                        <Authorized permission="edit" fallback={null}>
+                          <button
+                            onClick={() => onEdit(entry)}
+                            className="text-xs font-medium text-blue-500 hover:text-blue-700"
+                          >
+                            Edit
+                          </button>
+                        </Authorized>
+                        <Authorized permission="delete" fallback={null}>
+                          <button
+                            onClick={() => onDelete(entry.id)}
+                            className={`text-xs font-medium ${
+                              hasReturns ? "text-red-100 hover:text-white" : "text-red-500 hover:text-red-700"
+                            }`}
+                          >
+                            Delete
+                          </button>
+                        </Authorized>
                       </div>
                     </td>
                   </tr>
