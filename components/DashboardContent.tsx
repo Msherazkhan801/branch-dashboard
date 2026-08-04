@@ -282,12 +282,10 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         .filter((e) => e.branch === b)
         .reduce((s, e) => s + e.customers, 0);
 
-      // Branch expense includes its own extra expenses + proportional share of head office
-      // For simplicity, we add head office expense to each branch's expense
-      // But since the stats map is per branch, we'll add head office to total in KPISection
-      // Instead, we distribute head office expense equally across branches
-      const branchCount = branchFilter ? 1 : BRANCHES.length;
-      const hoShare = totalHeadOfficeExpense / branchCount;
+      // Branch expense includes its own extra expenses.
+      // On the overall dashboard, we also share head office expense evenly across all branches.
+      // On a branch-specific dashboard, do not allocate the full head office expense to that single branch.
+      const hoShare = branchFilter ? 0 : totalHeadOfficeExpense / BRANCHES.length;
 
       acc[b] = {
         income: inc + clsInc,
