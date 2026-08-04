@@ -33,7 +33,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const user = getUserByCredentials(email, password);
+    const user = await getUserByCredentials(email, password);
     if (!user) {
       throw new Error("Invalid credentials");
     }

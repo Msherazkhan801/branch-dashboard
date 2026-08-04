@@ -3,11 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
-import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { useState, useMemo } from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  const visibleItems = useMemo(
+    () => NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin"),
+    [user]
+  );
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -53,7 +60,7 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
+{visibleItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

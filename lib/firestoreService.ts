@@ -182,6 +182,58 @@ export async function deleteHeadOfficeExpenseEntry(id: string): Promise<void> {
   await deleteDoc(doc(db, HEAD_OFFICE_EXPENSE_COLLECTION, id));
 }
 
+// ===================== USERS (for admin-created users/managers) =====================
+
+const USERS_COLLECTION = "users";
+
+export interface FirestoreUser {
+  id: string;
+  email: string;
+  name: string;
+  role: "viewer" | "admin" | "data-entry" | "manager";
+  password: string;
+  createdAt: string;
+}
+
+export async function fetchUsers(): Promise<FirestoreUser[]> {
+  const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    email: d.data().email,
+    name: d.data().name,
+    role: d.data().role,
+    password: d.data().password,
+    createdAt: d.data().createdAt ?? new Date().toISOString(),
+  }));
+}
+
+export async function createUser(user: Omit<FirestoreUser, "id" | "createdAt">): Promise<FirestoreUser> {
+  const docRef = await addDoc(collection(db, USERS_COLLECTION), {
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    password: user.password,
+    createdAt: new Date().toISOString(),
+  });
+  return { ...user, id: docRef.id, createdAt: new Date().toISOString() };
+}
+
+export async function deleteUserFromDB(id: string): Promise<void> {
+  await deleteDoc(doc(db, USERS_COLLECTION, id));
+}
+
+export async function updateUserInDB(
+  id: string,
+  data: Partial<Omit<FirestoreUser, "id" | "createdAt">>
+): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.role !== undefined) updateData.role = data.role;
+  if (data.password !== undefined) updateData.password = data.password;
+  await updateDoc(doc(db, USERS_COLLECTION, id), updateData);
+}
+
 // ===================== CATEGORIES =====================
 
 export async function fetchCategories(): Promise<string[]> {

@@ -354,7 +354,7 @@ function LoginForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input-glow w-full rounded-2xl bg-white/5 border border-white/15 pl-11 pr-12 py-3.5 text-sm text-white placeholder-white/30 outline-none"
-                    placeholder="admin"
+                    placeholder="admin123"
                   />
                   <button
                     type="button"
@@ -384,12 +384,12 @@ function LoginForm() {
                   />
                   Remember me
                 </label>
-                <button
+                {/* <button
                   type="button"
                   className="text-teal-300/80 hover:text-teal-200 transition"
                 >
                   Forgot password?
-                </button>
+                </button> */}
               </div>
 
               {/* Submit */}
@@ -413,7 +413,7 @@ function LoginForm() {
             </form>
 
             <p className="mt-6 text-center text-xs text-white/40">
-              Demo credentials: <span className="text-white/60">admin@gmail.com / admin</span>
+              Demo credentials: <span className="text-white/60">test@gmail.com / test123</span>
             </p>
           </div>
         </div>

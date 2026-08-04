@@ -1,4 +1,4 @@
-export type UserRole = "viewer" | "admin" | "data-entry";
+export type UserRole = "viewer" | "admin" | "data-entry" | "manager";
 export type Permission = "view" | "create" | "edit" | "delete";
 
 export interface UserRecord {
@@ -66,6 +66,12 @@ export const PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
     edit: true,
     delete: true,
   },
+  manager: {
+    view: true,
+    create: true,
+    edit: true,
+    delete: true,
+  },
   "data-entry": {
     view: true,
     create: true,
@@ -74,11 +80,35 @@ export const PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
   },
 };
 
-export function getUserByCredentials(email: string, password: string): UserRecord | null {
+export async function getUserByCredentials(email: string, password: string): Promise<UserRecord | null> {
   const normalizedEmail = email.trim().toLowerCase();
-  const storedPassword = AUTH_CREDENTIALS[normalizedEmail];
-  if (storedPassword !== password) {
+
+  // 1) Check static seed users
+  const seedUser = AUTH_USERS.find((user) => user.email === normalizedEmail);
+  if (seedUser) {
+    const storedPassword = AUTH_CREDENTIALS[normalizedEmail];
+    if (storedPassword === password) {
+      return seedUser;
+    }
     return null;
   }
-  return AUTH_USERS.find((user) => user.email === normalizedEmail) ?? null;
+
+  // 2) Check admin-created users stored in Firestore
+  try {
+    const { fetchUsers } = await import("./firestoreService");
+    const dbUsers = await fetchUsers();
+    const match = dbUsers.find((u) => u.email === normalizedEmail);
+    if (match && match.password === password) {
+      return {
+        id: match.id,
+        email: match.email,
+        name: match.name,
+        role: match.role,
+      };
+    }
+  } catch (err) {
+    console.error("Error authenticating against Firestore users:", err);
+  }
+
+  return null;
 }

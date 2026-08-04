@@ -30,6 +30,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon?: string;
+  adminOnly?: boolean; // only visible to admin role
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -39,6 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Branch 3", href: "/branch/branch-3", icon: "🏢" },
   { label: "Branch 4", href: "/branch/branch-4", icon: "🏢" },
   { label: "Head Office", href: "/head-office", icon: "🏛️" },
+  { label: "Users", href: "/users", icon: "👥", adminOnly: true },
 ];
 
 export const CLASSES = [
