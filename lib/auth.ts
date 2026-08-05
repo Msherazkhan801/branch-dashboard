@@ -68,9 +68,9 @@ export const PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
   },
   manager: {
     view: true,
-    create: true,
-    edit: true,
-    delete: true,
+    create: false,
+    edit: false,
+    delete: false,
   },
   "data-entry": {
     view: true,

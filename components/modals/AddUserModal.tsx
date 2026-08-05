@@ -150,7 +150,7 @@ export default function AddUserModal({ isOpen, onClose, onSave, initialUser = nu
               ))}
             </select>
             <p className="mt-1 text-xs text-gray-400">
-              Managers have full access; Data Entry users cannot delete records.
+              Managers can only view data; Data Entry users cannot delete records.
             </p>
           </div>
 
