@@ -10,10 +10,11 @@ interface AddExtraExpenseModalProps {
   onSave: (entry: Omit<ExtraExpenseEntry, "id">, id?: string) => void;
   categories: string[];
   initialEntry?: ExtraExpenseEntry | null;
+  fixedBranch?: Branch;
 }
 
-export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categories, initialEntry = null }: AddExtraExpenseModalProps) {
-  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? BRANCHES[0]);
+export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categories, initialEntry = null, fixedBranch }: AddExtraExpenseModalProps) {
+  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? fixedBranch ?? BRANCHES[0]);
   const [date, setDate] = useState(initialEntry?.date ?? new Date().toISOString().split("T")[0]);
   const [category, setCategory] = useState((initialEntry?.category ?? categories[0]) || DEFAULT_CATEGORIES[0]);
   const [amount, setAmount] = useState(String(initialEntry?.amount ?? ""));
@@ -29,14 +30,14 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categori
       setUseNewCategory(false);
       setNewCategory("");
     } else {
-      setBranch(BRANCHES[0]);
+      setBranch(fixedBranch ?? BRANCHES[0]);
       setDate(new Date().toISOString().split("T")[0]);
       setCategory(categories[0] || DEFAULT_CATEGORIES[0]);
       setAmount("");
       setNewCategory("");
       setUseNewCategory(false);
     }
-  }, [initialEntry, isOpen, categories]);
+  }, [initialEntry, isOpen, categories, fixedBranch]);
 
   if (!isOpen) return null;
 
@@ -56,7 +57,7 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categori
       initialEntry?.id
     );
 
-    setBranch(BRANCHES[0]);
+    setBranch(fixedBranch ?? BRANCHES[0]);
     setDate(new Date().toISOString().split("T")[0]);
     setCategory(categories[0] || DEFAULT_CATEGORIES[0]);
     setAmount("");
@@ -75,18 +76,20 @@ export default function AddExtraExpenseModal({ isOpen, onClose, onSave, categori
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-            <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value as Branch)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16324F]"
-            >
-              {BRANCHES.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
+          {!fixedBranch && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+              <select
+                value={branch}
+                onChange={(e) => setBranch(e.target.value as Branch)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16324F]"
+              >
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input

@@ -673,7 +673,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         </div>
       )}
 
-      <AddIncomeModal
+<AddIncomeModal
         isOpen={showIncomeModal}
         onClose={() => {
           setShowIncomeModal(false);
@@ -681,6 +681,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         }}
         onSave={handleSaveIncome}
         initialEntry={editingIncomeEntry}
+        fixedBranch={branchFilter}
       />
       <AddClassIncomeModal
         isOpen={showClassModal}
@@ -690,6 +691,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         }}
         onSave={handleSaveClassIncome}
         initialEntry={editingClassEntry}
+        fixedBranch={branchFilter}
       />
       <AddExtraExpenseModal
         isOpen={showExtraModal}
@@ -700,6 +702,7 @@ export default function DashboardContent({ branchFilter, title }: DashboardConte
         onSave={handleSaveExtraExpense}
         categories={categories}
         initialEntry={editingExtraEntry}
+        fixedBranch={branchFilter}
       />
       <AddHeadOfficeExpenseModal
         isOpen={showHeadOfficeModal}

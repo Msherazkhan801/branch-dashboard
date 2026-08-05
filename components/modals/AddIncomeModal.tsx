@@ -9,10 +9,11 @@ interface AddIncomeModalProps {
   onClose: () => void;
   onSave: (entry: Omit<IncomeEntry, "id">, id?: string) => void;
   initialEntry?: IncomeEntry | null;
+  fixedBranch?: Branch;
 }
 
-export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry = null }: AddIncomeModalProps) {
-  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? BRANCHES[0]);
+export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry = null, fixedBranch }: AddIncomeModalProps) {
+  const [branch, setBranch] = useState<Branch>(initialEntry?.branch ?? fixedBranch ?? BRANCHES[0]);
   const [date, setDate] = useState(initialEntry?.date ?? new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState(initialEntry ? String(initialEntry.amount) : "");
 
@@ -22,11 +23,11 @@ export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry =
       setDate(initialEntry.date);
       setAmount(String(initialEntry.amount));
     } else {
-      setBranch(BRANCHES[0]);
+      setBranch(fixedBranch ?? BRANCHES[0]);
       setDate(new Date().toISOString().split("T")[0]);
       setAmount("");
     }
-  }, [initialEntry, isOpen]);
+  }, [initialEntry, isOpen, fixedBranch]);
 
   if (!isOpen) return null;
 
@@ -43,11 +44,11 @@ export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry =
       initialEntry?.id
     );
 
-    setBranch(BRANCHES[0]);
+    setBranch(fixedBranch ?? BRANCHES[0]);
     setDate(new Date().toISOString().split("T")[0]);
     setAmount("");
     onClose();
-  };
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -59,18 +60,20 @@ export default function AddIncomeModal({ isOpen, onClose, onSave, initialEntry =
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-            <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value as Branch)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16324F]"
-            >
-              {BRANCHES.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
+          {!fixedBranch && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+              <select
+                value={branch}
+                onChange={(e) => setBranch(e.target.value as Branch)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#16324F]"
+              >
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input
